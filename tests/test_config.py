@@ -14,3 +14,11 @@ def test_config_has_mappls_section():
     assert cfg["mappls"]["enabled"] in (True, False)
     assert cfg["mappls"]["token_url"].startswith("https://")
     assert "metro station" in cfg["mappls"]["poi_keywords"]
+
+
+def test_config_has_cii_section():
+    from src import config
+    cfg = config.load()
+    assert "cii" in cfg
+    assert cfg["cii"]["rush_hour_weights"]["morning_peak"]["weight"] == 2.0
+    assert cfg["cii"]["recurrence_bonus"]["multiplier"] == 1.5
