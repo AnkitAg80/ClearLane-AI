@@ -43,6 +43,9 @@ def test_pipeline_writes_poi_context_when_mappls_enabled(tmp_path, sample_csv, m
             return {}
 
     monkeypatch.setattr(pipeline, "MapplsClient", lambda **kw: FakeClient())
+    # Isolate this POI-enrichment test from the road provider (covered in test_road_provider.py)
+    monkeypatch.setattr(pipeline, "road_context_for_cells",
+                        lambda cells, cfg, client: pd.DataFrame({"h3": list(cells), "lanes": 1}))
     cfg = {
         "data": {"violations_csv": sample_csv,
                  "processed_dir": str(tmp_path / "processed"),
@@ -67,7 +70,6 @@ def test_pipeline_writes_poi_context_when_mappls_enabled(tmp_path, sample_csv, m
     }
 
     pipeline.run(cfg, with_roadctx=False, with_mappls=True)
-    import os, pandas as pd
     p = os.path.join(cfg["data"]["processed_dir"], "cell_poi_context.parquet")
     assert os.path.exists(p)
     assert "poi_shopping_mall" in pd.read_parquet(p).columns

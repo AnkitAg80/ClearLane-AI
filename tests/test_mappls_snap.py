@@ -1,30 +1,45 @@
-from src.mappls.snap import snap_to_road
+import src.mappls.snap as snap
 
 
-class FakeClient:
+class FakeResp:
     def __init__(self, payload):
         self._p = payload
-        self.last_params = None
-    def get_json(self, url, params=None, use_cache=True):
-        self.last_params = params
+
+    def raise_for_status(self):
+        pass
+
+    def json(self):
         return self._p
 
 
-def test_snap_to_road_parses_points():
-    payload = {"results": [{"lat": 12.9, "lng": 77.6, "roadName": "80 Ft Road"}]}
-    client = FakeClient(payload)
-    out = snap_to_road(client, "https://route.test/snap", [(12.9, 77.6)])
+class FakeClient:
+    def _get_token(self):
+        return "tok"
+
+
+def test_snap_to_road_parses_points_and_uses_access_token(monkeypatch):
+    captured = {}
+
+    def fake_get(url, params=None, timeout=None):
+        captured["params"] = params
+        return FakeResp({"results": [{"lat": 12.9, "lng": 77.6, "roadName": "80 Ft Road"}]})
+
+    monkeypatch.setattr(snap.requests, "get", fake_get)
+    out = snap.snap_to_road(FakeClient(), "https://route.test/snap", [(12.9, 77.6)])
     assert out[0]["road_name"] == "80 Ft Road"
+    # live-verified contract: access_token query-param + pts="lat,lng;..."
+    assert captured["params"]["access_token"] == "tok"
+    assert captured["params"]["pts"] == "12.9,77.6"
 
 
 def test_snap_to_road_batches_over_100(monkeypatch):
     calls = {"n": 0}
 
-    class CountingClient:
-        def get_json(self, url, params=None, use_cache=True):
-            calls["n"] += 1
-            return {"results": []}
+    def fake_get(url, params=None, timeout=None):
+        calls["n"] += 1
+        return FakeResp({"results": []})
 
+    monkeypatch.setattr(snap.requests, "get", fake_get)
     pts = [(12.9 + i * 1e-4, 77.6) for i in range(150)]
-    snap_to_road(CountingClient(), "https://route.test/snap", pts)
+    snap.snap_to_road(FakeClient(), "https://route.test/snap", pts)
     assert calls["n"] == 2  # 150 points -> two batches (<=100 each)
