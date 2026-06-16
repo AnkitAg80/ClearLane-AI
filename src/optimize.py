@@ -1,4 +1,6 @@
 import pandas as pd
+import heapq
+import itertools
 
 def allocate_officers(forecast_df, cfg):
     """Greedy submodular allocation of officers to maximize congestion relief."""
@@ -6,27 +8,33 @@ def allocate_officers(forecast_df, cfg):
     eff = cfg["optimize"]["effectiveness_base"]
     decay = cfg["optimize"]["decay_factor"]
     
-    # Initialize state
-    df = forecast_df.copy()
-    df["officers_assigned"] = 0
-    df["expected_relief"] = 0.0
-    
-    # Keep track of marginal gain for next officer per cell
-    df["marginal_gain"] = df["pred_cii"] * eff
+    heap = []
+    tie_breaker = itertools.count()
+    for idx, row in forecast_df.iterrows():
+        mg = row["pred_cii"] * eff
+        if mg > 0:
+            heapq.heappush(heap, (-mg, next(tie_breaker), idx, row["pred_cii"], 0))
+            
+    officers_assigned = {idx: 0 for idx in forecast_df.index}
+    expected_relief = {idx: 0.0 for idx in forecast_df.index}
     
     for _ in range(budget):
-        if df["marginal_gain"].max() <= 0:
-            break # No more relief possible
+        if not heap:
+            break
             
-        # Pick best cell
-        best_idx = df["marginal_gain"].idxmax()
+        neg_mg, _, idx, pred_cii, k = heapq.heappop(heap)
+        mg = -neg_mg
         
-        # Assign officer
-        df.at[best_idx, "officers_assigned"] += 1
-        df.at[best_idx, "expected_relief"] += df.at[best_idx, "marginal_gain"]
+        officers_assigned[idx] += 1
+        expected_relief[idx] += mg
         
-        # Update marginal gain for this cell: CII * eff * decay^k
-        k = df.at[best_idx, "officers_assigned"]
-        df.at[best_idx, "marginal_gain"] = df.at[best_idx, "pred_cii"] * eff * (decay ** k)
-        
+        k += 1
+        next_mg = pred_cii * eff * (decay ** k)
+        if next_mg > 0:
+            heapq.heappush(heap, (-next_mg, next(tie_breaker), idx, pred_cii, k))
+            
+    df = forecast_df.copy()
+    df["officers_assigned"] = df.index.map(officers_assigned)
+    df["expected_relief"] = df.index.map(expected_relief)
+    
     return df
