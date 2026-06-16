@@ -1,5 +1,5 @@
 import pandas as pd
-from src.forecast import train_climatology, predict_climatology
+from src.forecast import train_climatology, predict_climatology, train_lgbm, predict_lgbm
 
 def test_climatology_baseline():
     df = pd.DataFrame([
@@ -20,3 +20,28 @@ def test_climatology_baseline():
     assert preds.loc[0, "pred_cii"] == 15.0  # Mean of 10 and 20
     assert preds.loc[1, "pred_cii"] == 5.0
     assert preds.loc[2, "pred_cii"] == 0.0   # Fallback for unseen
+
+def test_lgbm_forecast():
+    # Synthetic data
+    train_df = pd.DataFrame({
+        "h3": ["c1", "c2", "c1", "c2"],
+        "hour": [9, 10, 9, 10],
+        "dow": [0, 1, 0, 1],
+        "lanes": [2, 4, 2, 4],
+        "poi_shopping_mall": [1, 0, 1, 0],
+        "poi_metro_station": [0, 1, 0, 1],
+        "cii": [15.0, 5.0, 14.0, 6.0]
+    })
+    
+    cfg = {"forecast": {"features": ["hour", "dow", "lanes", "poi_shopping_mall", "poi_metro_station"]}}
+    
+    model = train_lgbm(train_df, cfg)
+    
+    test_df = pd.DataFrame({
+        "h3": ["c1"], "hour": [9], "dow": [0], "lanes": [2],
+        "poi_shopping_mall": [1], "poi_metro_station": [0]
+    })
+    
+    preds = predict_lgbm(model, test_df, cfg)
+    assert "pred_cii" in preds.columns
+    assert len(preds) == 1
