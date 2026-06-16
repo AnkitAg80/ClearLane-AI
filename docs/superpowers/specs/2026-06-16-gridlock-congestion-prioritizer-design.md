@@ -94,6 +94,15 @@ Tech: pydeck `H3HexagonLayer`, `st.metric`, plotly, `st.download_button`.
 
 Working Streamlit demo on real 298k data; count⇄CII toggle shows materially different priority maps; forecast beats naive on April holdout; optimizer produces a downloadable budget-constrained plan with a coverage curve; CII validated against independent incident data.
 
+## 11. Mappls integration (sponsor API — added 2026-06-16)
+
+Layer Mappls (MapmyIndia) on top of the OSM foundation for India-tuned accuracy and sponsor credit. **OSM/heuristics remain automatic fallbacks** (Phase 1 stays intact). Built as **Phase 1.5**, feeding Phase 2's CII.
+
+- **Auth:** OAuth2 `client_credentials` → bearer token (24h) at `https://outpost.mappls.com/api/security/oauth/token`. Credentials via env vars (`MAPPLS_CLIENT_ID`, `MAPPLS_CLIENT_SECRET`, `MAPPLS_MAP_SDK_KEY`) / gitignored `.env` — never committed.
+- **Quota-safe + offline-safe:** all REST responses disk-cached; enrichment is **cell-level (~1–3k cells), never per-point (298k)**.
+- **APIs used:** Snap-to-Road (`route.mappls.com/route/movement/snapToRoad`, ≤100 pts/call) → accurate road association for CII capacity-loss (L2); Nearby Places (`atlas.mappls.com/api/places/nearby/json`) → POI context per hotspot (metro/mall/market/hospital/school), explains hotspots + matches the brief; live Traffic flow → dashboard validation overlay + wow; Distance Matrix → patrol-beat routing (optimizer); Mappls map tiles → dashboard basemap (sponsor branding).
+- **Provider pattern:** `MapplsRoadContext` primary, `OSMRoadContext` (Phase 1) fallback. Exact JSON response shapes are confirmed against the live API at build time via a **gated live-smoke task** (runs only when creds are in env) — no guessed parsing.
+
 ## Tech stack
 
-Python 3.14, pandas, numpy, h3 (v4), osmnx (1.9.x), scikit-learn, lightgbm, streamlit, pydeck, plotly, pyyaml, pyarrow, pytest.
+Python **3.11** (`.venv`; osmnx 1.9.4 needs `<3.13`), pandas, numpy, h3 (v4), osmnx (1.9.4), scikit-learn, lightgbm, streamlit, pydeck, plotly, pyyaml, pyarrow, pytest. Mappls layer adds `requests` + `python-dotenv`.

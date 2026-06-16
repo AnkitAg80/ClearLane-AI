@@ -17,8 +17,8 @@ def test_config_has_mappls_section():
 
 
 def test_config_has_cii_section():
-    from src import config
     cfg = config.load()
     assert "cii" in cfg
     assert cfg["cii"]["rush_hour_weights"]["morning_peak"]["weight"] == 2.0
     assert cfg["cii"]["recurrence_bonus"]["multiplier"] == 1.5
+    assert cfg["cii"]["capacity_weight_power"] == 0.5
