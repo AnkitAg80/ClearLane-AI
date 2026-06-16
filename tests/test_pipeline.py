@@ -109,3 +109,43 @@ def test_pipeline_writes_cii_artifact(tmp_path, sample_csv):
     df = pd.read_parquet(out_path)
     assert "cii" in df.columns
     assert len(df) > 0
+
+
+def test_pipeline_writes_phase3_artifacts(tmp_path, sample_csv, monkeypatch):
+    import os, json
+    import pandas as pd
+    import src.pipeline as pipeline
+    
+    class FakeClient:
+        configured = True
+        def get_json(self, url, params=None, use_cache=True):
+            return {"suggestedLocations": [{"placeName": "X", "type": params.get("keywords", "unknown"), "distance": 50}]}
+
+    monkeypatch.setattr(pipeline, "MapplsClient", lambda **kw: FakeClient())
+    monkeypatch.setattr(pipeline, "road_context_for_cells",
+                        lambda cells, cfg, client: pd.DataFrame({"h3": list(cells), "lanes": 1}))
+    
+    cfg = {
+        "data": {
+            "violations_csv": sample_csv,
+            "processed_dir": str(tmp_path / "processed"),
+            "cache_dir": str(tmp_path / "cache"),
+        },
+        "geo": {"h3_resolution": 9, "bbox": {"north": 13.2, "south": 12.7, "east": 77.8, "west": 77.3}},
+        "pcu": {"CAR": 1.0, "SCOOTER": 0.3, "_default": 1.0},
+        "severity": {"_default": 1.0},
+        "roadctx": {"network_type": "drive", "lanes_default_by_class": {"_default": 1}},
+        "cii": {"rush_hour_weights": {"default": 1.0}, "recurrence_bonus": {"threshold_days": 5, "multiplier": 1.5}, "capacity_weight_power": 0.5},
+        "mappls": {"enabled": True, "cache_dir": str(tmp_path / "mcache"), "nearby_url": "https://test", "snap_url": "https://test", "poi_keywords": ["shopping mall"], "poi_radius_m": 500},
+        "forecast": {"train_end_date": "2024-03-31", "features": ["hour", "dow", "lanes"]},
+        "optimize": {"officer_budget": 5, "effectiveness_base": 0.3, "decay_factor": 0.8}
+    }
+    
+    pipeline.run(cfg, with_roadctx=False, with_mappls=True, run_phase3=True)
+    
+    out = cfg["data"]["processed_dir"]
+    assert os.path.exists(os.path.join(out, "deployment_plan.parquet"))
+    
+    df = pd.read_parquet(os.path.join(out, "deployment_plan.parquet"))
+    assert "officers_assigned" in df.columns
+

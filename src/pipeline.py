@@ -11,9 +11,11 @@ from src.mappls.client import MapplsClient
 from src.enrich import cell_poi_context
 from src.cii import score_unit_impact, apply_road_impact, calculate_cii
 from src.providers.road_context import road_context_for_cells
+from src.forecast import train_lgbm, predict_lgbm
+from src.optimize import allocate_officers
 
 
-def run(cfg, sample=None, with_roadctx=True, with_mappls=False):
+def run(cfg, sample=None, with_roadctx=True, with_mappls=False, run_phase3=False):
     """Run the Phase-1 pipeline; write parquet artifacts; return key tables."""
     df = load_violations(cfg["data"]["violations_csv"])
     if sample:
@@ -59,12 +61,30 @@ def run(cfg, sample=None, with_roadctx=True, with_mappls=False):
     cii_df = calculate_cii(weighted_df, cfg)
     cii_df.to_parquet(os.path.join(out, "cell_cii.parquet"))
 
-    return {
-        "cell_time_counts": ctc, 
-        "cell_totals": tot, 
-        "station_totals": stn,
-        "cii": cii_df
-    }
+    if run_phase3:
+        # 1. Join features for forecasting
+        features_df = cii_df.copy()
+        if "lanes" not in features_df.columns and with_roadctx:
+            features_df = features_df.merge(rc[["h3", "lanes"]], on="h3", how="left").fillna({"lanes": 1})
+        elif "lanes" not in features_df.columns:
+            features_df["lanes"] = 1
+
+        if with_mappls and cfg.get("mappls", {}).get("enabled"):
+            features_df = features_df.merge(poi, on="h3", how="left").fillna(0)
+
+        # 2. Forecast
+        model = train_lgbm(features_df, cfg)
+        forecast_res = predict_lgbm(model, features_df, cfg)
+
+        # 3. Optimize
+        plan = allocate_officers(forecast_res, cfg)
+
+        # 4. Save
+        plan.to_parquet(os.path.join(out, "deployment_plan.parquet"))
+
+        return {"cell_time_counts": ctc, "cell_totals": tot, "station_totals": stn, "cell_cii": cii_df, "deployment_plan": plan}
+
+    return {"cell_time_counts": ctc, "cell_totals": tot, "station_totals": stn, "cell_cii": cii_df}
 
 
 def main():
@@ -72,9 +92,10 @@ def main():
     parser.add_argument("--sample", type=int, default=None, help="limit to first N rows")
     parser.add_argument("--no-roadctx", action="store_true", help="skip OSM road context")
     parser.add_argument("--mappls", action="store_true", help="run Mappls POI enrichment")
+    parser.add_argument("--phase3", action="store_true", help="run Phase 3 Forecast and Optimize")
     args = parser.parse_args()
     cfg = config_module.load()
-    run(cfg, sample=args.sample, with_roadctx=not args.no_roadctx, with_mappls=args.mappls)
+    run(cfg, sample=args.sample, with_roadctx=not args.no_roadctx, with_mappls=args.mappls, run_phase3=args.phase3)
 
 
 if __name__ == "__main__":
