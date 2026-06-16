@@ -15,13 +15,14 @@ def train_lgbm(train_df, cfg):
     """Train a LightGBM regressor to predict CII."""
     features = cfg["forecast"]["features"]
     
+    df = train_df.copy()
     # Ensure features exist
     for f in features:
-        if f not in train_df.columns:
-            train_df[f] = 0
+        if f not in df.columns:
+            df[f] = 0
             
-    X = train_df[features]
-    y = train_df["cii"]
+    X = df[features]
+    y = df["cii"]
     
     model = lgb.LGBMRegressor(n_estimators=50, random_state=42, n_jobs=1)
     model.fit(X, y)

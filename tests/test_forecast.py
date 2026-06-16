@@ -45,3 +45,24 @@ def test_lgbm_forecast():
     preds = predict_lgbm(model, test_df, cfg)
     assert "pred_cii" in preds.columns
     assert len(preds) == 1
+
+def test_lgbm_missing_features():
+    train_df = pd.DataFrame({
+        "h3": ["c1", "c2"],
+        "hour": [9, 10],
+        "dow": [0, 1],
+        "lanes": [2, 4],
+        "cii": [15.0, 5.0]
+    })
+    cfg = {"forecast": {"features": ["hour", "dow", "lanes", "poi_shopping_mall", "poi_metro_station"]}}
+    
+    model = train_lgbm(train_df, cfg)
+    assert "poi_shopping_mall" not in train_df.columns
+    
+    test_df = pd.DataFrame({
+        "h3": ["c1"], "hour": [9], "dow": [0]
+    })
+    
+    preds = predict_lgbm(model, test_df, cfg)
+    assert "pred_cii" in preds.columns
+    assert "lanes" not in test_df.columns
