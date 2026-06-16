@@ -64,10 +64,8 @@ def run(cfg, sample=None, with_roadctx=True, with_mappls=False, run_phase3=False
     if run_phase3:
         # 1. Join features for forecasting
         features_df = cii_df.copy()
-        if "lanes" not in features_df.columns and with_roadctx:
-            features_df = features_df.merge(rc[["h3", "lanes"]], on="h3", how="left").fillna({"lanes": 1})
-        elif "lanes" not in features_df.columns:
-            features_df["lanes"] = 1
+        if "lanes" not in features_df.columns:
+            features_df = features_df.merge(road_df[["h3", "lanes"]], on="h3", how="left").fillna({"lanes": 1})
 
         if with_mappls and cfg.get("mappls", {}).get("enabled"):
             features_df = features_df.merge(poi, on="h3", how="left").fillna(0)
