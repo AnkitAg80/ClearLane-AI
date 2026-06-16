@@ -19,3 +19,38 @@ def apply_road_impact(df, road_df, cfg):
     
     df["weighted_impact"] = df["unit_impact"] / (df["lanes"] ** power)
     return df
+
+def calculate_cii(df, cfg):
+    """Aggregate to (h3, hour, dow) and apply temporal/chronic multipliers."""
+    cii_cfg = cfg["cii"]
+    
+    # 1. Temporal Weighting
+    def get_rush_weight(hour):
+        weights = cii_cfg["rush_hour_weights"]
+        for peak_name, peak_cfg in weights.items():
+            if peak_name == "default": continue
+            if peak_cfg["start"] <= hour < peak_cfg["end"]:
+                return peak_cfg["weight"]
+        return weights.get("default", 1.0)
+
+    df = df.copy()
+    df["rush_weight"] = df["hour"].apply(get_rush_weight)
+    
+    # 2. Chronic Weighting (Recurrence)
+    # Calculate number of unique days per cell
+    cell_days = df.groupby("h3")["created_datetime"].apply(lambda x: x.dt.date.nunique())
+    bonus_cfg = cii_cfg["recurrence_bonus"]
+    chronic_mult = cell_days.apply(
+        lambda d: bonus_cfg["multiplier"] if d >= bonus_cfg["threshold_days"] else 1.0
+    ).reset_index(name="chronic_weight")
+    
+    # 3. Aggregation
+    cii_df = df.groupby(["h3", "hour", "dow"]).agg({
+        "weighted_impact": "sum",
+        "rush_weight": "first"
+    }).reset_index()
+    
+    cii_df = cii_df.merge(chronic_mult, on="h3", how="left")
+    cii_df["cii"] = cii_df["weighted_impact"] * cii_df["rush_weight"] * cii_df["chronic_weight"]
+    
+    return cii_df
