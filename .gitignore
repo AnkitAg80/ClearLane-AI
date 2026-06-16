@@ -6,3 +6,4 @@ data/cache/
 cache/
 .claude/
 .pytest_cache/
+.env

@@ -37,3 +37,11 @@ roadctx:
     tertiary: 1
     residential: 1
     _default: 1
+mappls:
+  enabled: true
+  cache_dir: "data/cache/mappls"
+  token_url: "https://outpost.mappls.com/api/security/oauth/token"
+  snap_url: "https://route.mappls.com/route/movement/snapToRoad"
+  nearby_url: "https://atlas.mappls.com/api/places/nearby/json"
+  poi_keywords: ["metro station", "shopping mall", "market", "hospital", "school", "bus station"]
+  poi_radius_m: 500
