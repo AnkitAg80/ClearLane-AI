@@ -22,3 +22,13 @@ def test_config_has_cii_section():
     assert cfg["cii"]["rush_hour_weights"]["morning_peak"]["weight"] == 2.0
     assert cfg["cii"]["recurrence_bonus"]["multiplier"] == 1.5
     assert cfg["cii"]["capacity_weight_power"] == 0.5
+
+
+def test_config_has_phase3_sections():
+    from src import config
+    cfg = config.load()
+    assert "forecast" in cfg
+    assert cfg["forecast"]["train_end_date"] == "2024-03-31"
+    assert "optimize" in cfg
+    assert cfg["optimize"]["officer_budget"] == 100
+    assert cfg["optimize"]["decay_factor"] == 0.8

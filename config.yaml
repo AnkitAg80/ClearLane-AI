@@ -55,3 +55,11 @@ cii:
     threshold_days: 5
     multiplier: 1.5
   capacity_weight_power: 0.5  # scaling for 1/lanes
+
+forecast:
+  train_end_date: "2024-03-31"  # Train: Nov-Mar, Test: Apr
+  features: ["hour", "dow", "lanes", "poi_shopping_mall", "poi_metro_station"]
+optimize:
+  officer_budget: 100
+  effectiveness_base: 0.3    # An officer clears 30% of congestion
+  decay_factor: 0.8          # Marginal utility decay per added officer
