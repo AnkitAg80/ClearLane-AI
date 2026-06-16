@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from src.cii import score_unit_impact
+from src.cii import score_unit_impact, apply_road_impact
 
 def test_score_unit_impact_calculates_pcu_x_severity():
     df = pd.DataFrame([
@@ -16,3 +16,19 @@ def test_score_unit_impact_calculates_pcu_x_severity():
     # V2: 0.3 * 1.7 = 0.51
     assert scored.loc[0, "unit_impact"] == 1.0
     assert round(scored.loc[1, "unit_impact"], 2) == 0.51
+
+def test_apply_road_impact_weights_by_lanes():
+    df = pd.DataFrame([
+        {"h3": "cell1", "unit_impact": 1.0},
+        {"h3": "cell2", "unit_impact": 1.0},
+    ])
+    road_df = pd.DataFrame([
+        {"h3": "cell1", "lanes": 1},
+        {"h3": "cell2", "lanes": 4},
+    ])
+    cfg = {"cii": {"capacity_weight_power": 1.0}}
+    weighted = apply_road_impact(df, road_df, cfg)
+    # cell1: 1.0 / (1^1) = 1.0
+    # cell2: 1.0 / (4^1) = 0.25
+    assert weighted.loc[0, "weighted_impact"] == 1.0
+    assert weighted.loc[1, "weighted_impact"] == 0.25
