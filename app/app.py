@@ -1,8 +1,9 @@
 import streamlit as st
 import pandas as pd
 import os
+import pydeck as pdk
 from src import config
-from src.app_utils import load_data_safe
+from src.app_utils import load_data_safe, get_h3_layer
 
 st.set_page_config(page_title="Gridlock - Congestion Prioritizer", layout="wide")
 
@@ -36,12 +37,44 @@ def main():
     
     with tab1:
         st.subheader("Congestion Hotspots (CII)")
-        st.write("Visualizing the intensity of parking-induced congestion.")
-        # Placeholder for map
+        
+        # Color toggle
+        color_mode = st.radio("Metric", ["CII (Impact)", "Raw Count"], horizontal=True)
+        color_col = "cii" if color_mode == "CII (Impact)" else "weighted_impact"
+        
+        # Render map
+        layer = get_h3_layer(cii_df, color_col)
+        
+        bbox = cfg["geo"]["bbox"]
+        lat_center = (bbox["north"] + bbox["south"]) / 2
+        lon_center = (bbox["east"] + bbox["west"]) / 2
+        
+        view_state = pdk.ViewState(latitude=lat_center, longitude=lon_center, zoom=11, bearing=0, pitch=45)
+        
+        st.pydeck_chart(pdk.Deck(
+            layers=[layer],
+            initial_view_state=view_state,
+            tooltip={"text": f"Cell: {{h3}}\n{color_mode}: {{{color_col}}}"}
+        ))
         
     with tab2:
         st.subheader("Officer Deployment Strategy")
-        st.dataframe(plan_df[plan_df["officers_assigned"] > 0])
+        
+        top_n = st.slider("Show Top N Hotspots", 10, 100, 50)
+        
+        # Filter and display
+        active_plan = plan_df[plan_df["officers_assigned"] > 0].sort_values("expected_relief", ascending=False).head(top_n)
+        
+        st.dataframe(active_plan[["h3", "officers_assigned", "expected_relief", "pred_cii"]], use_container_width=True)
+        
+        # CSV Export
+        csv = active_plan.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="Download Deployment Plan (CSV)",
+            data=csv,
+            file_name='gridlock_deployment_plan.csv',
+            mime='text/csv',
+        )
         
     with tab3:
         st.subheader("System Performance")
