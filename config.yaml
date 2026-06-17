@@ -57,7 +57,7 @@ cii:
 
 forecast:
   train_end_date: "2024-03-31"  # Train: Nov-Mar, Test: Apr
-  features: ["hour", "dow", "lanes", "poi_shopping_mall", "poi_metro_station"]
+  features: ["hour", "dow", "lanes", "poi_shopping_mall", "poi_metro_station", "poi_market", "poi_hospital", "poi_school", "poi_bus_station"]
 optimize:
   officer_budget: 100
   effectiveness_base: 0.3    # An officer clears 30% of congestion
