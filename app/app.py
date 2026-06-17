@@ -14,6 +14,11 @@ def load_app_data(processed_dir):
     plan = load_data_safe(os.path.join(processed_dir, "deployment_plan.parquet"))
     return cii, plan
 
+@st.cache_data
+def convert_df_to_csv(df):
+    """Cached conversion of dataframe to CSV."""
+    return df.to_csv(index=False).encode('utf-8')
+
 def main():
     st.title("🚦 Gridlock: Congestion-Impact Enforcement")
     st.markdown("Quantifying violation impact to prioritize officer deployment.")
@@ -63,22 +68,50 @@ def main():
         top_n = st.slider("Show Top N Hotspots", 10, 100, 50)
         
         # Filter and display
-        active_plan = plan_df[plan_df["officers_assigned"] > 0].sort_values("expected_relief", ascending=False).head(top_n)
+        full_active_plan = plan_df[plan_df["officers_assigned"] > 0].sort_values("expected_relief", ascending=False)
+        display_plan = full_active_plan.head(top_n)
         
-        st.dataframe(active_plan[["h3", "officers_assigned", "expected_relief", "pred_cii"]], use_container_width=True)
+        st.dataframe(
+            display_plan[["h3", "officers_assigned", "expected_relief", "pred_cii"]], 
+            use_container_width=True,
+            column_config={
+                "expected_relief": st.column_config.NumberColumn("Expected Relief", format="%.2f"),
+                "pred_cii": st.column_config.NumberColumn("Predicted CII", format="%.2f"),
+                "officers_assigned": st.column_config.NumberColumn("Officers", format="%d")
+            }
+        )
         
-        # CSV Export
-        csv = active_plan.to_csv(index=False).encode('utf-8')
+        # CSV Export (Full Plan)
+        csv = convert_df_to_csv(full_active_plan)
         st.download_button(
-            label="Download Deployment Plan (CSV)",
+            label=f"Download Full Deployment Plan ({len(full_active_plan)} cells)",
             data=csv,
             file_name='gridlock_deployment_plan.csv',
             mime='text/csv',
         )
         
     with tab3:
-        st.subheader("System Performance")
-        st.metric("Total Expected Relief", f"{plan_df['expected_relief'].sum():.1f} PCU-hours")
+        st.subheader("System Performance & ROI")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.metric("Officers Deployed", f"{plan_df['officers_assigned'].sum()}")
+            st.metric("Total Pressure Managed", f"{plan_df['pred_cii'].sum():.1f} units")
+            
+        with col2:
+            st.metric("Targeted Congestion Relief", f"{plan_df['expected_relief'].sum():.1f} PCU-hours")
+            efficiency = (plan_df['expected_relief'].sum() / plan_df['pred_cii'].sum()) * 100
+            st.metric("Relief Efficiency", f"{efficiency:.1f}%")
+            
+        # Plotly Pareto-ish curve
+        import plotly.express as px
+        plan_sorted = plan_df.sort_values("expected_relief", ascending=False).reset_index()
+        plan_sorted["cumulative_relief"] = plan_sorted["expected_relief"].cumsum()
+        
+        fig = px.line(plan_sorted, y="cumulative_relief", title="Cumulative Congestion Relief Curve",
+                     labels={"index": "Officer Rank", "cumulative_relief": "Total Relief (PCU-hours)"})
+        st.plotly_chart(fig, use_container_width=True)
 
 if __name__ == "__main__":
     main()
