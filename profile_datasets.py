@@ -2,8 +2,8 @@
 import json
 import pandas as pd
 
-VIOL = r"C:\Users\ankit\Downloads\jan to may police violation_anonymized791b166.csv"
-EVENT = r"C:\Users\ankit\Downloads\Astram event data_anonymized - Astram event data_anonymizedb40ac87.csv"
+VIOL = r"dataset\jan to may police violation_anonymized791b166.csv"
+# EVENT = r"C:\Users\ankit\Downloads\Astram event data_anonymized - Astram event data_anonymizedb40ac87.csv"
 
 def line(): print("-" * 60)
 
@@ -28,21 +28,21 @@ for k, n in vt.value_counts().head(12).items():
     print(f"   {n:>7}  {k}")
 line()
 
-# ---------------- EVENT (Theme 2) ----------------
-print("=" * 60); print("THEME 2  — EVENTS / INCIDENTS"); print("=" * 60)
-e = pd.read_csv(EVENT, low_memory=False)
-print("rows:", len(e), "| cols:", e.shape[1])
-print("lat/long null %:", round(e.latitude.isna().mean()*100, 2), "/", round(e.longitude.isna().mean()*100, 2))
-print("event_type:", dict(e.event_type.value_counts(dropna=False)))
-print("event_cause top10:", dict(e.event_cause.value_counts(dropna=False).head(10)))
-print("requires_road_closure:", dict(e.requires_road_closure.value_counts(dropna=False)))
-print("priority:", dict(e.priority.value_counts(dropna=False)))
-es = pd.to_datetime(e.start_datetime, errors="coerce", utc=True)
-print("date range:", es.min(), "->", es.max())
-# duration where resolved/closed present
-end = pd.to_datetime(e.resolved_datetime.fillna(e.closed_datetime), errors="coerce", utc=True)
-dur = (end - es).dt.total_seconds() / 60.0
-dur = dur[(dur > 0) & (dur < 60*24*7)]
-print("events with usable duration:", dur.notna().sum(),
-      "| median min:", round(dur.median(), 1) if dur.notna().sum() else "n/a")
-print("distinct zone:", e.zone.nunique(), "| corridor:", e.corridor.nunique())
+# # ---------------- EVENT (Theme 2) ----------------
+# print("=" * 60); print("THEME 2  — EVENTS / INCIDENTS"); print("=" * 60)
+# e = pd.read_csv(EVENT, low_memory=False)
+# print("rows:", len(e), "| cols:", e.shape[1])
+# print("lat/long null %:", round(e.latitude.isna().mean()*100, 2), "/", round(e.longitude.isna().mean()*100, 2))
+# print("event_type:", dict(e.event_type.value_counts(dropna=False)))
+# print("event_cause top10:", dict(e.event_cause.value_counts(dropna=False).head(10)))
+# print("requires_road_closure:", dict(e.requires_road_closure.value_counts(dropna=False)))
+# print("priority:", dict(e.priority.value_counts(dropna=False)))
+# es = pd.to_datetime(e.start_datetime, errors="coerce", utc=True)
+# print("date range:", es.min(), "->", es.max())
+# # duration where resolved/closed present
+# end = pd.to_datetime(e.resolved_datetime.fillna(e.closed_datetime), errors="coerce", utc=True)
+# dur = (end - es).dt.total_seconds() / 60.0
+# dur = dur[(dur > 0) & (dur < 60*24*7)]
+# print("events with usable duration:", dur.notna().sum(),
+#       "| median min:", round(dur.median(), 1) if dur.notna().sum() else "n/a")
+# print("distinct zone:", e.zone.nunique(), "| corridor:", e.corridor.nunique())

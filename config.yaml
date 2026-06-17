@@ -1,6 +1,5 @@
 data:
-  violations_csv: "C:/Users/ankit/Downloads/jan to may police violation_anonymized791b166.csv"
-  events_csv: "C:/Users/ankit/Downloads/Astram event data_anonymized - Astram event data_anonymizedb40ac87.csv"
+  violations_csv: "dataset/jan to may police violation_anonymized791b166.csv"
   processed_dir: "data/processed"
   cache_dir: "data/cache"
 geo:
