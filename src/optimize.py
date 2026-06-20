@@ -2,7 +2,7 @@ import pandas as pd
 import heapq
 import itertools
 
-def allocate_officers(forecast_df, cfg):
+def allocate_officers(forecast_df, cfg, score_col="pred_cii"):
     """Greedy submodular allocation of officers to maximize congestion relief."""
     budget = cfg["optimize"]["officer_budget"]
     eff = cfg["optimize"]["effectiveness_base"]
@@ -11,9 +11,9 @@ def allocate_officers(forecast_df, cfg):
     heap = []
     tie_breaker = itertools.count()
     for idx, row in forecast_df.iterrows():
-        mg = row["pred_cii"] * eff
+        mg = row[score_col] * eff
         if mg > 0:
-            heapq.heappush(heap, (-mg, next(tie_breaker), idx, row["pred_cii"], 0))
+            heapq.heappush(heap, (-mg, next(tie_breaker), idx, row[score_col], 0))
             
     officers_assigned = {idx: 0 for idx in forecast_df.index}
     expected_relief = {idx: 0.0 for idx in forecast_df.index}

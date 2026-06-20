@@ -4,6 +4,10 @@
 
 **Goal:** Calculate the Congestion Intensity Index (CII) for every H3 cell and time window, weighting raw violation counts by vehicle size (PCU), violation severity, road capacity, and rush-hour demand.
 
+**Dataset-alignment correction (2026-06-18):** CII outputs must carry Phase 1 area metadata so each scored H3/time bucket remains explainable as a real place. The corrected `cell_cii.parquet` includes `top_location`, `top_junction`, `top_police_station`, `record_count`, `unique_location_count`, and validation-status counts from `cell_area_summary.parquet`. Future scoring changes should consider validation status and repeated observed-location concentration as first-class signals.
+
+**Strict review correction (2026-06-18):** Capacity loss now supports the Bureau of Public Roads delay curve through `capacity_model: "bpr"`, `bpr_alpha`, `bpr_beta`, and `lane_capacity_proxy`. This replaces the old purely linear lane penalty for the main configuration and makes CII increase non-linearly as violation pressure approaches road capacity.
+
 **Architecture:** A scoring module `src/cii.py` that processes exploded violations, joins road context, and applies mathematical weights defined in `config.yaml`. The pipeline writes `cell_cii.parquet` as the primary artifact for the dashboard.
 
 **Tech Stack:** Python 3.14, pandas, numpy, pyyaml, pyarrow, pytest.
@@ -355,3 +359,7 @@ git commit -m "feat: integrate CII scoring into pipeline" -m "Co-Authored-By: Cl
 - `python -m src.pipeline --sample 20000` writes `cell_cii.parquet`.
 - `cell_cii.parquet` contains `cii` column with non-zero values.
 - CII correctly differentiates impact (e.g., peak hour violations > off-peak).
+
+## Final Correction 2026-06-18
+
+This phase is superseded by `docs/superpowers/plans/2026-06-18-gridlock-winning-phases-1-to-4.md` and summarized in `readme_winning_phases_1_to_4.md`. The final CII contract uses validation-weighted unit impact, BPR capacity delay, temporal/chronic components, and confidence scoring.

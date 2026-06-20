@@ -1,9 +1,9 @@
-id,latitude,longitude,vehicle_type,violation_type,created_datetime,police_station
-V1,12.9255567,77.618665,CAR,"[""WRONG PARKING"",""NO PARKING""]",2024-01-02 09:15:00+00,Madiwala
-V2,12.9255600,77.6187000,scooter,"[""NO PARKING""]",2024-01-02 09:45:00+00,Madiwala
-V3,12.9054633,77.7007781,MAXI-CAB,"[""PARKING IN A MAIN ROAD""]",2024-01-03 18:30:00+00,Bellandur
-V4,12.9255570,77.6186600,CAR,"[""WRONG PARKING""]",2024-01-09 09:20:00+00,Madiwala
-V5,99.0,99.0,CAR,"[""NO PARKING""]",2024-01-02 10:00:00+00,OutOfBox
-V6,12.9255567,77.6186650,CAR,NULL,NULL,Madiwala
-V7,12.9255567,77.6186650,CAR,"[malformed",2024-01-02 11:00:00+00,Madiwala
-V4,12.9255570,77.6186600,CAR,"[""WRONG PARKING""]",2024-01-09 09:20:00+00,Madiwala
+id,latitude,longitude,vehicle_type,violation_type,created_datetime,police_station,location,junction_name,validation_status
+V1,12.9255567,77.618665,CAR,"[""WRONG PARKING"",""NO PARKING""]",2024-01-02 09:15:00+00,Madiwala,"1st Main Road, Koramangala","No Junction",approved
+V2,12.9255600,77.6187000,scooter,"[""NO PARKING""]",2024-01-02 09:45:00+00,Madiwala,"1st Main Road, Koramangala","No Junction",rejected
+V3,12.9054633,77.7007781,MAXI-CAB,"[""PARKING IN A MAIN ROAD""]",2024-01-03 18:30:00+00,Bellandur,"Outer Ring Road, Bellandur","BTP999 - Test Junction",approved
+V4,12.9255570,77.6186600,CAR,"[""WRONG PARKING""]",2024-01-09 09:20:00+00,Madiwala,"2nd Cross Road, Koramangala","BTP123 - Local Junction",
+V5,99.0,99.0,CAR,"[""NO PARKING""]",2024-01-02 10:00:00+00,OutOfBox,"Outside Bengaluru","No Junction",approved
+V6,12.9255567,77.6186650,CAR,NULL,NULL,Madiwala,"Bad Datetime Road","No Junction",approved
+V7,12.9255567,77.6186650,CAR,"[malformed",2024-01-02 11:00:00+00,Madiwala,"3rd Cross Road, Koramangala","No Junction",processing
+V4,12.9255570,77.6186600,CAR,"[""WRONG PARKING""]",2024-01-09 09:20:00+00,Madiwala,"2nd Cross Road, Koramangala","BTP123 - Local Junction",

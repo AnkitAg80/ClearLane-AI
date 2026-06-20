@@ -3,8 +3,16 @@ __pycache__/
 *.pyc
 data/processed/
 data/cache/
+dataset/
 cache/
 .claude/
 .pytest_cache/
 .env
 scripts/_mappls_samples/
+docs/
+.agent/
+.codex/
+.vscode/
+claude.md
+gemini.md
+AGENTS.md

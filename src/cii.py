@@ -1,23 +1,34 @@
 def score_unit_impact(df, cfg):
-    """Calculate ι(v) baseline: PCU(vehicle) × severity(type)."""
+    """Calculate i(v) baseline: PCU(vehicle) x severity(type)."""
     pcu_map = cfg["pcu"]
     sev_map = cfg["severity"]
+    validation_weights = cfg.get("validation_weights", {"_unknown": 1.0})
     
     df = df.copy()
     df["pcu"] = df["vehicle_type"].map(pcu_map).fillna(pcu_map["_default"])
     df["severity"] = df["violation"].map(sev_map).fillna(sev_map["_default"])
-    df["unit_impact"] = df["pcu"] * df["severity"]
+    if "validation_status" in df.columns:
+        status = df["validation_status"].fillna("_unknown").astype(str).str.lower()
+        df["validation_weight"] = status.map(validation_weights).fillna(validation_weights.get("_unknown", 1.0))
+    else:
+        df["validation_weight"] = validation_weights.get("_unknown", 1.0)
+    df["unit_impact"] = df["pcu"] * df["severity"] * df["validation_weight"]
     return df
 
 def apply_road_impact(df, road_df, cfg):
-    """Adjust impact by road capacity: weighted = unit_impact / (lanes ^ power)."""
-    power = cfg["cii"].get("capacity_weight_power", 0.5)
+    """Attach road capacity and calculate the pre-temporal impact signal."""
+    cii_cfg = cfg["cii"]
+    power = cii_cfg.get("capacity_weight_power", 0.5)
+    capacity_model = cii_cfg.get("capacity_model", "legacy_power")
     
     # Merge road context; default to 1 lane if missing
     df = df.merge(road_df[["h3", "lanes"]], on="h3", how="left")
     df["lanes"] = df["lanes"].fillna(1).clip(lower=1)
     
-    df["weighted_impact"] = df["unit_impact"] / (df["lanes"] ** power)
+    if capacity_model == "bpr":
+        df["weighted_impact"] = df["unit_impact"]
+    else:
+        df["weighted_impact"] = df["unit_impact"] / (df["lanes"] ** power)
     return df
 
 def calculate_cii(df, cfg):
@@ -34,6 +45,11 @@ def calculate_cii(df, cfg):
         return weights.get("default", 1.0)
 
     df = df.copy()
+    if "lanes" not in df.columns:
+        df["lanes"] = 1
+    if "validation_weight" not in df.columns:
+        df["validation_weight"] = 1.0
+    df["lanes"] = df["lanes"].fillna(1).clip(lower=1)
     df["rush_weight"] = df["hour"].apply(get_rush_weight)
     
     # 2. Chronic Weighting (Recurrence)
@@ -47,10 +63,35 @@ def calculate_cii(df, cfg):
     # 3. Aggregation
     cii_df = df.groupby(["h3", "hour", "dow"]).agg({
         "weighted_impact": "sum",
+        "validation_weight": "mean",
+        "lanes": "first",
         "rush_weight": "first"
     }).reset_index()
     
     cii_df = cii_df.merge(chronic_mult, on="h3", how="left")
-    cii_df["cii"] = cii_df["weighted_impact"] * cii_df["rush_weight"] * cii_df["chronic_weight"]
+    if cii_cfg.get("capacity_model", "legacy_power") == "bpr":
+        alpha = cii_cfg.get("bpr_alpha", 0.15)
+        beta = cii_cfg.get("bpr_beta", 4)
+        lane_capacity = cii_cfg.get("lane_capacity_proxy", 10)
+        ratio_cap = cii_cfg.get("bpr_ratio_cap")
+        capacity = (cii_df["lanes"] * lane_capacity).clip(lower=1)
+        cii_df["capacity_ratio"] = cii_df["weighted_impact"] / capacity
+        if ratio_cap is not None:
+            cii_df["capacity_ratio"] = cii_df["capacity_ratio"].clip(upper=ratio_cap)
+        cii_df["capacity_delay_factor"] = 1 + alpha * (cii_df["capacity_ratio"] ** beta)
+    else:
+        cii_df["capacity_ratio"] = 0.0
+        cii_df["capacity_delay_factor"] = 1.0
+    cii_df["base_impact"] = cii_df["weighted_impact"]
+    cii_df["capacity_component"] = cii_df["capacity_delay_factor"]
+    cii_df["temporal_component"] = cii_df["rush_weight"]
+    cii_df["chronic_component"] = cii_df["chronic_weight"]
+    cii_df["confidence_score"] = cii_df["validation_weight"].clip(lower=0, upper=1)
+    cii_df["cii"] = (
+        cii_df["base_impact"]
+        * cii_df["capacity_component"]
+        * cii_df["temporal_component"]
+        * cii_df["chronic_component"]
+    )
     
     return cii_df

@@ -4,6 +4,10 @@
 
 **Goal:** Add a Mappls (MapmyIndia, the event sponsor) enrichment layer — cell-level POI context + India-accurate road context via Snap-to-Road — on top of the existing OSM foundation, with OSM as automatic fallback, all disk-cached and credential-gated.
 
+**Dataset-alignment correction (2026-06-18):** Mappls POI keywords are optional explanatory context only. They must not be treated as the universe of violation areas. The primary place model comes from the dataset's observed `location`, `junction_name`, coordinates, and `police_station` fields, summarized in Phase 1's `cell_area_summary.parquet`. Mappls can explain nearby context around a hotspot, but hotspot identity comes from observed violations.
+
+**Removal correction (2026-06-18):** Mappls has been removed from the active Phase 1-2 scoring pipeline because its current road-context path forces `lanes = 1` and can distort BPR capacity scoring. The code files remain as archived/inactive probes, but `config.yaml` sets `mappls.enabled: false`, the pipeline ignores `--mappls`, and road context now uses OSM capacity data only.
+
 **Architecture:** A thin OAuth+cache `MapplsClient` underpins small per-API modules (`nearby`, `snap`). A `road_context` provider prefers Mappls and falls back to the Phase-1 OSM module. `enrich.py` produces cell-level `cell_poi_context.parquet`. Everything is optional (no creds → OSM/heuristic fallback) and cached (quota-safe, offline-safe demo). Spec §11: `docs/superpowers/specs/2026-06-16-gridlock-congestion-prioritizer-design.md`.
 
 **Tech Stack:** Python 3.11 `.venv`, `requests`, `python-dotenv` (new), plus existing pandas/h3/osmnx/pytest.
@@ -748,3 +752,7 @@ git commit -m "feat: optional Mappls POI enrichment in pipeline (--mappls)" -m "
 - `road_context_for_cells` returns Mappls data when enabled+configured, OSM otherwise.
 - `python -m src.pipeline --sample 20000 --no-roadctx --mappls` writes `cell_poi_context.parquet` (with creds; cached thereafter).
 - Deferred to Phase 4 (dashboard) on the same client: live traffic overlay, Mappls basemap tiles, Distance-Matrix patrol routing.
+
+## Final Correction 2026-06-18
+
+This phase is superseded by `docs/superpowers/plans/2026-06-18-gridlock-winning-phases-1-to-4.md` and summarized in `readme_winning_phases_1_to_4.md`. Mappls was removed from active scoring; the final capacity path is OSM-only and the legacy `--mappls` flag is a no-op.

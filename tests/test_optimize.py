@@ -59,3 +59,14 @@ def test_budget_exceeds_useful_allocations():
     cfg = {"optimize": {"officer_budget": 5, "effectiveness_base": 0.5, "decay_factor": 0.5}}
     plan = allocate_officers(df, cfg)
     assert plan["officers_assigned"].sum() == 0
+
+
+def test_allocation_accepts_custom_score_column():
+    df = pd.DataFrame([
+        {"h3": "c1", "pred_next_3h_cii": 100.0},
+        {"h3": "c2", "pred_next_3h_cii": 20.0},
+    ])
+    cfg = {"optimize": {"officer_budget": 2, "effectiveness_base": 0.5, "decay_factor": 0.5}}
+    plan = allocate_officers(df, cfg, score_col="pred_next_3h_cii")
+    assert plan["officers_assigned"].sum() == 2
+    assert plan.loc[plan["h3"] == "c1", "expected_relief"].iloc[0] > 0

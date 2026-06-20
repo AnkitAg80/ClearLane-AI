@@ -4,6 +4,8 @@
 
 **Goal:** Turn the raw 298k-row parking-violation CSV into clean, H3-binned, road-context-enriched aggregate tables written as parquet artifacts.
 
+**Dataset-alignment correction (2026-06-18):** The real CSV has 10,942 unique non-null `location` values, 169 `junction_name` values, and 54 police stations. Phase 1 must therefore preserve observed place context in addition to H3 IDs. The corrected foundation includes `cell_area_summary.parquet` with per-cell `record_count`, `violation_total`, `unique_location_count`, `top_location`, `top_junction`, `top_police_station`, centroid, and validation-status counts. H3 remains the scalable spatial unit; it is not a replacement for human-readable area metadata.
+
 **Architecture:** A precompute pipeline of small single-responsibility modules (`ingest → geo → aggregate → roadctx`) orchestrated by `pipeline.py`, writing parquet to `data/processed/`. The Streamlit app (later phases) only reads these artifacts. Spec: `docs/superpowers/specs/2026-06-16-gridlock-congestion-prioritizer-design.md`.
 
 **Tech Stack:** Python 3.14, pandas, h3 (v4), osmnx (1.9.4), pyyaml, pyarrow, pytest. (lightgbm/scikit-learn/streamlit/pydeck/plotly listed in requirements now but used in later phases.)
@@ -701,3 +703,7 @@ git commit -m "feat: pipeline orchestration with sample mode + parquet artifacts
 - `python -m src.pipeline --sample 20000 --no-roadctx` writes the three core artifacts on real data.
 - OSM graph cached once → `cell_road_context.parquet` produced; reruns work offline.
 - Six committed modules with single responsibilities, ready for Phase 2 (CII scoring) to consume `data/processed/*.parquet`.
+
+## Final Correction 2026-06-18
+
+This phase is superseded by `docs/superpowers/plans/2026-06-18-gridlock-winning-phases-1-to-4.md` and summarized in `readme_winning_phases_1_to_4.md`. The final Phase 1 contract includes dataset-native area summaries, validation quality, and `support_score`.

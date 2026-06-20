@@ -6,8 +6,9 @@ from src.mappls.client import MapplsClient
 from src import config as config_module
 
 pytestmark = pytest.mark.skipif(
-    not (os.environ.get("MAPPLS_CLIENT_ID") and os.environ.get("MAPPLS_CLIENT_SECRET")),
-    reason="Mappls creds not in env",
+    not os.environ.get("MAPPLS_LIVE_TEST")
+    or not (os.environ.get("MAPPLS_CLIENT_ID") and os.environ.get("MAPPLS_CLIENT_SECRET")),
+    reason="Set MAPPLS_LIVE_TEST=1 and MAPPLS_CLIENT_ID/SECRET",
 )
 
 

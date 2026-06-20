@@ -1,0 +1,11 @@
+{
+  "mode": "prepare_only",
+  "panel_rows": 933860,
+  "panel_columns": 65,
+  "feature_count": 51,
+  "features_present": 51,
+  "missing_features": [],
+  "all_zero_features": [],
+  "cells": 265,
+  "timestamps": 3524
+}
