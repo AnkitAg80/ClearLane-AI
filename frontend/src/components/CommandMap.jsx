@@ -115,6 +115,65 @@ export default function CommandMap({ rows, bbox, selectedH3, onSelect, metricMod
           </dl>
         </aside>
       )}
+
+      <MapLegend metricMode={metricMode} maxMetric={maxMetric} />
+    </div>
+  );
+}
+
+function MapLegend({ metricMode, maxMetric }) {
+  const modeLabels = {
+    deployment_score: { title: 'Deployment Score', unit: '' },
+    pred_next_3h_cii: { title: 'Predicted Next 3h CII', unit: '' },
+    officers_assigned: { title: 'Officers Assigned', unit: '' },
+    expected_relief: { title: 'Expected Relief', unit: '' },
+  };
+  const { title, unit } = modeLabels[metricMode] || { title: 'Metric', unit: '' };
+
+  const formatVal = (val) => {
+    if (metricMode === 'officers_assigned') return Math.max(0, Math.round(val));
+    return Number(val).toFixed(2);
+  };
+
+  const ranges = [
+    { color: 'rgba(220, 38, 38, 0.8)', label: 'High', text: `> ${formatVal(maxMetric * 0.75)} ${unit}`.trim() },
+    { color: 'rgba(217, 119, 6, 0.8)', label: 'Medium', text: `${formatVal(maxMetric * 0.45)} - ${formatVal(maxMetric * 0.75)}` },
+    { color: 'rgba(22, 163, 74, 0.8)', label: 'Low', text: `${formatVal(maxMetric * 0.15)} - ${formatVal(maxMetric * 0.45)}` },
+    { color: 'rgba(71, 85, 105, 0.8)', label: 'Minimal', text: `< ${formatVal(maxMetric * 0.15)} ${unit}`.trim() },
+  ];
+
+  return (
+    <div style={{
+      position: 'absolute',
+      bottom: '14px',
+      right: '14px',
+      zIndex: 2,
+      border: '1px solid var(--line)',
+      borderRadius: '8px',
+      background: 'rgba(2, 6, 23, 0.84)',
+      backdropFilter: 'blur(14px)',
+      padding: '12px 14px',
+      color: '#e2e8f0',
+      fontSize: '12px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '8px',
+      minWidth: '180px'
+    }}>
+      <strong style={{ fontSize: '13px', color: 'var(--text)', marginBottom: '4px' }}>{title}</strong>
+      {ranges.map((r, i) => (
+        <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ width: '12px', height: '12px', borderRadius: '4px', background: r.color }}></span>
+            <span>{r.label}</span>
+          </div>
+          <span style={{ color: 'var(--muted)', fontFamily: 'monospace' }}>{r.text}</span>
+        </div>
+      ))}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', borderTop: '1px solid var(--line)', paddingTop: '10px' }}>
+        <span style={{ width: '12px', height: '12px', borderRadius: '4px', border: '2px solid rgba(8, 145, 178, 1)', background: 'transparent' }}></span>
+        <span>Selected Location</span>
+      </div>
     </div>
   );
 }

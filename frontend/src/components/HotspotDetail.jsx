@@ -18,10 +18,9 @@ export default function HotspotDetail({ detail }) {
   return (
     <Panel title={detail.title} eyebrow={detail.station || 'Selected hotspot'} className="detail-panel">
       <div className="detail-grid">
-        <MetricCard icon={Radar} label="Score" value={Number(cards.deployment_score || 0).toFixed(3)} tone="danger" />
-        <MetricCard icon={Activity} label="Next 3h CII" value={Number(cards.pred_next_3h_cii || 0).toFixed(2)} tone="warning" />
-        <MetricCard icon={Route} label="Officers" value={cards.officers_assigned ?? 0} tone="success" />
-        <MetricCard icon={BadgeCheck} label="Support" value={Number(cards.support_score || 0).toFixed(2)} tone="info" />
+        <MetricCard icon={Radar} label="Priority Score" value={Number(cards.deployment_score || 0).toFixed(3)} tone="danger" tooltip="Overall importance weighting calculated by the AI balancing severity, volume, and traffic impact." />
+        <MetricCard icon={Activity} label="Predicted Impact (CII)" value={Number(cards.pred_next_3h_cii || 0).toFixed(2)} tone="warning" tooltip="Congestion Impact Index forecasted for the upcoming 3 hours." />
+        <MetricCard icon={Route} label="Assigned Personnel" value={cards.officers_assigned ?? 0} tone="success" tooltip="Number of officers specifically deployed to this zone." />
       </div>
 
       <div className="meta-strip">

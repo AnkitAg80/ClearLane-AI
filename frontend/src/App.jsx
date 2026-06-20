@@ -78,7 +78,6 @@ export default function App() {
   const [activeView, setActiveView] = useState('command');
   const [selectedH3, setSelectedH3] = useState(null);
   const [station, setStation] = useState('ALL');
-  const [minSupport, setMinSupport] = useState(0);
   const [query, setQuery] = useState('');
   const [metricMode, setMetricMode] = useState('deployment_score');
   const [loading, setLoading] = useState(true);
@@ -87,10 +86,9 @@ export default function App() {
 
   const filters = useMemo(() => ({
     station,
-    min_support: minSupport,
     query,
     limit: 300,
-  }), [station, minSupport, query]);
+  }), [station, query]);
 
   const loadStaticData = useCallback(async () => {
     setError('');
@@ -218,20 +216,17 @@ export default function App() {
           stations={stations}
           station={station}
           setStation={setStation}
-          minSupport={minSupport}
-          setMinSupport={setMinSupport}
           query={query}
           setQuery={setQuery}
           metricMode={metricMode}
           setMetricMode={setMetricMode}
         />
 
-        <section className="metrics-grid" aria-label="Command summary">
-          <MetricCard icon={Crosshair} label="Officers" value={summary.officers_deployed ?? 0} tone="success" />
-          <MetricCard icon={Activity} label="Active cells" value={summary.active_cells ?? 0} tone="info" />
-          <MetricCard icon={TrendingUp} label="Expected relief" value={formatNumber(summary.expected_relief)} tone="success" />
-          <MetricCard icon={ShieldAlert} label="Lift vs reactive" value={`${formatNumber(highlights.lift_pct, 1)}%`} tone="warning" />
-          <MetricCard icon={Database} label="Top-25 recall" value={formatNumber(highlights.deployment_score_top25_recall, 3)} />
+        <section className="metrics-grid metrics-grid--compact" aria-label="Command summary">
+          <MetricCard icon={Crosshair} label="Assigned Personnel" value={summary.officers_deployed ?? 0} tone="success" tooltip="Total available police personnel strategically allocated across all active zones." />
+          <MetricCard icon={Activity} label="Critical Zones" value={summary.active_cells ?? 0} tone="info" tooltip="Total number of high-priority targeted areas requiring immediate intervention." />
+          <MetricCard icon={TrendingUp} label="Est. Traffic Relief" value={formatNumber(summary.expected_relief)} tone="success" tooltip="Predicted reduction in traffic congestion achieved by executing this deployment plan." />
+          <MetricCard icon={ShieldAlert} label="AI Optimization Lift" value={`${formatNumber(highlights.lift_pct, 1)}%`} tone="warning" tooltip="Percentage improvement in congestion relief compared to a reactive, purely historical deployment." />
         </section>
 
         {error && <div className="inline-alert">{error}</div>}

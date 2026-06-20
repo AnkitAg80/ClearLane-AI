@@ -9,10 +9,10 @@ export default function HotspotTable({ rows, selectedH3, onSelect }) {
             <th><ArrowDownWideNarrow size={14} aria-hidden="true" /> Rank</th>
             <th>Hotspot</th>
             <th>Station</th>
-            <th>Score</th>
-            <th>Next 3h</th>
-            <th>Officers</th>
-            <th>Relief</th>
+            <th title="Overall importance weighting calculated by the AI balancing severity, volume, and traffic impact.">Priority Score</th>
+            <th title="Congestion Impact Index forecasted for the upcoming 3 hours.">Predicted Impact (CII)</th>
+            <th title="Number of officers specifically deployed to this zone.">Assigned Personnel</th>
+            <th title="Predicted reduction in traffic congestion achieved by executing this deployment plan.">Est. Traffic Relief</th>
           </tr>
         </thead>
         <tbody>

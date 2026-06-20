@@ -214,7 +214,7 @@ button {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 260px) minmax(210px, 280px) auto;
+  grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 260px) auto;
   gap: 10px;
   align-items: center;
   margin-bottom: 14px;
@@ -252,7 +252,7 @@ button {
 
 .range-field {
   display: grid;
-  grid-template-columns: 132px minmax(80px, 1fr);
+  grid-template-columns: max-content minmax(80px, 1fr);
   align-items: center;
   gap: 8px;
   padding: 0 12px;
