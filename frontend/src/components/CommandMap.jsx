@@ -7,6 +7,7 @@ import { LocateFixed, MousePointer2 } from 'lucide-react';
 const metricLabels = {
   deployment_score: 'Deployment score',
   pred_next_3h_cii: 'Predicted next-3h CII',
+  remaining_next_3h_cii: 'Remaining next-3h CII',
   officers_assigned: 'Officers',
   expected_relief: 'Expected relief',
   support_score: 'Support score',
@@ -125,6 +126,7 @@ function MapLegend({ metricMode, maxMetric }) {
   const modeLabels = {
     deployment_score: { title: 'Deployment Score', unit: '' },
     pred_next_3h_cii: { title: 'Predicted Next 3h CII', unit: '' },
+    remaining_next_3h_cii: { title: 'Remaining Next 3h CII', unit: '' },
     officers_assigned: { title: 'Officers Assigned', unit: '' },
     expected_relief: { title: 'Expected Relief', unit: '' },
   };

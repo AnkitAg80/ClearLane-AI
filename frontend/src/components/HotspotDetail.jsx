@@ -56,7 +56,6 @@ export default function HotspotDetail({ detail, compact = false }) {
   // Derive top-level variables
   const priorityScore = Number(cards.deployment_score || 0);
   const priorityTier = priorityScore > 0.8 ? 'Critical' : priorityScore > 0.5 ? 'High' : priorityScore > 0.3 ? 'Medium' : 'Low';
-  const rank = Math.floor(cards.rank_score) || 1; // Simulation since real rank isn't directly in detail
   const assigned = Number(cards.officers_assigned || 0);
   const relief = Number(cards.expected_relief || 0);
   const forecastedCii = Number(cards.pred_next_3h_cii || 0);
@@ -157,17 +156,24 @@ export default function HotspotDetail({ detail, compact = false }) {
       <Panel title="Forecast & Impact" eyebrow="Time-series Analysis">
         <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
           <div style={{ flex: '1 1 400px' }}>
-            <h4 style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '16px', fontWeight: 500 }}>Congestion Trend (Simulated)</h4>
-            <div style={{ height: '180px', background: 'var(--line)', borderRadius: '8px', position: 'relative', display: 'flex', alignItems: 'flex-end', padding: '16px', gap: '8px' }}>
-              {[currentCii, currentCii * 0.67 + forecastedCii * 0.33, currentCii * 0.33 + forecastedCii * 0.67, forecastedCii].map((val, idx) => {
-                const heightPct = Math.min(100, Math.max(2, ((val || 0) / 100) * 100));
-                return (
-                  <div key={idx} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
-                    <div style={{ width: '100%', height: `${heightPct}%`, background: idx >= 1 ? 'var(--amber)' : 'var(--cyan)', opacity: idx >= 1 ? 0.7 : 1, borderRadius: '4px 4px 0 0', transition: 'all 0.3s ease' }} />
-                    <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{['Now', 'T+1h', 'T+2h', 'T+3h'][idx]}</span>
-                  </div>
-                );
-              })}
+            <h4 style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '16px', fontWeight: 500 }}>Forecast Inputs</h4>
+            <div style={{ background: 'var(--line)', borderRadius: '8px', padding: '16px', display: 'grid', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                <span style={{ color: 'var(--muted)', fontSize: '13px' }}>Current CII</span>
+                <strong style={{ color: 'var(--cyan)' }}>{currentCii.toFixed(1)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                <span style={{ color: 'var(--muted)', fontSize: '13px' }}>Forecast next 3h CII</span>
+                <strong style={{ color: 'var(--amber)' }}>{forecastedCii.toFixed(1)}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                <span style={{ color: 'var(--muted)', fontSize: '13px' }}>Trend from previous hour</span>
+                <strong style={{ color: isRising ? 'var(--red)' : 'var(--green)' }}>{isRising ? 'Rising' : 'Stable / falling'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px' }}>
+                <span style={{ color: 'var(--muted)', fontSize: '13px' }}>Primary driver</span>
+                <strong style={{ color: 'var(--text)', textAlign: 'right' }}>{topDrivers[0]?.formattedName || 'Local CII pressure'}</strong>
+              </div>
             </div>
           </div>
           
@@ -237,15 +243,15 @@ export default function HotspotDetail({ detail, compact = false }) {
           </Panel>
         </div>
 
-        {/* 8. What changed recently? */}
+        {/* 8. Current evidence */}
         <div style={{ flex: '1 1 300px' }}>
-          <Panel title="What changed recently?" eyebrow="Live Updates">
+          <Panel title="Current evidence" eyebrow="Latest available signals">
             <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                 <AlertTriangle size={16} style={{ color: 'var(--amber)', marginTop: '2px', flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text)', marginBottom: '4px' }}>Forecast worsened</div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Predicted CII jumped by {Math.abs(forecastedCii - currentCii).toFixed(1)} points in the last hour.</div>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text)', marginBottom: '4px' }}>Forecast pressure</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Next-3-hour CII is {forecastedCii.toFixed(1)} versus current CII of {currentCii.toFixed(1)}.</div>
                 </div>
               </li>
               {getSignalValue('current_violation_count') > 0 && (
@@ -260,8 +266,8 @@ export default function HotspotDetail({ detail, compact = false }) {
               <li style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                 <Clock size={16} style={{ color: 'var(--info)', marginTop: '2px', flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text)', marginBottom: '4px' }}>Threshold crossed</div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Time-of-day pressure shifted to peak hour dynamics.</div>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text)', marginBottom: '4px' }}>Time component</div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Temporal weight contributes {getSignalValue('current_temporal_component').toFixed(2)} to the current CII score.</div>
                 </div>
               </li>
             </ul>
@@ -269,22 +275,16 @@ export default function HotspotDetail({ detail, compact = false }) {
         </div>
       </div>
 
-      {/* 10. Operator actions */}
+      {/* 10. Operator guidance */}
       <div style={{ background: 'var(--panel)', padding: '20px', borderRadius: '8px', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <ShieldAlert size={24} style={{ color: 'var(--text)' }} />
           <div>
-            <h3 style={{ fontSize: '16px', margin: '0 0 4px 0', color: 'var(--text)' }}>Operator Actions</h3>
-            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>Recommended next steps for this hotspot.</div>
+            <h3 style={{ fontSize: '16px', margin: '0 0 4px 0', color: 'var(--text)' }}>Operator Guidance</h3>
+            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>
+              Use the Command Center map to select another location, or use Active Deployments to change officer budgets.
+            </div>
           </div>
-        </div>
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <button className="primary-button" style={{ cursor: 'pointer' }}>
-            Deploy {assigned} Officers
-          </button>
-          <button style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--line)', borderRadius: '6px', color: 'var(--text)', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}>
-            Open in Command Map
-          </button>
         </div>
       </div>
       </>

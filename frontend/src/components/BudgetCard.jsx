@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Crosshair } from 'lucide-react';
 
 export default function BudgetCard({ deployedCount, onOptimize, isLoading }) {
-  const [budget, setBudget] = useState(100);
+  const [budget, setBudget] = useState(deployedCount || 100);
+  const numericBudget = Number.isFinite(Number(budget)) ? Number(budget) : 0;
+  const sliderMax = Math.max(500, Number(deployedCount || 0) * 2, numericBudget);
+
+  useEffect(() => {
+    setBudget(deployedCount || 100);
+  }, [deployedCount]);
 
   const handleApply = () => {
-    onOptimize(budget);
+    onOptimize(numericBudget);
   };
 
   return (
@@ -19,9 +25,9 @@ export default function BudgetCard({ deployedCount, onOptimize, isLoading }) {
         <input 
           type="range" 
           min="10" 
-          max="500" 
+          max={sliderMax}
           step="10" 
-          value={budget} 
+          value={numericBudget}
           onChange={(e) => setBudget(Number(e.target.value))} 
           style={{ flex: 1, accentColor: 'var(--green)', cursor: 'pointer' }}
           disabled={isLoading}

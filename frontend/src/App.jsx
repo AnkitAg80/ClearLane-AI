@@ -276,8 +276,8 @@ export default function App() {
               onOptimize={handleOptimize}
               isLoading={optimizing}
             />
-            <MetricCard icon={Activity} label="Critical Zones" value={summary.active_cells ?? 0} tone="info" tooltip="Total number of high-priority targeted areas requiring immediate intervention." />
-            <MetricCard icon={TrendingUp} label="Est. Traffic Relief" value={formatNumber(summary.expected_relief)} tone="success" tooltip="Predicted reduction in traffic congestion achieved by executing this deployment plan." />
+            <MetricCard icon={Activity} label="Deployed Places" value={summary.active_cells ?? 0} tone="info" tooltip="Number of places receiving at least one assigned officer in the current deployment plan." />
+            <MetricCard icon={TrendingUp} label="Expected CII Relief" value={formatNumber(summary.expected_relief)} sublabel="CII reduction units" tone="success" tooltip="Estimated reduction in Congestion Impact Index units achieved by executing this deployment plan. This is not a percentage." />
             <MetricCard icon={ShieldAlert} label="AI Optimization Lift" value={`${formatNumber(highlights.lift_pct, 1)}%`} tone="warning" tooltip="Percentage improvement in congestion relief compared to a reactive, purely historical deployment." />
           </section>
         )}

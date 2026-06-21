@@ -45,6 +45,7 @@ SIGNAL_COLUMNS = [
 METRIC_COLUMNS = [
     "deployment_score",
     "pred_next_3h_cii",
+    "remaining_next_3h_cii",
     "cii",
     "current_cii",
     "officers_assigned",
@@ -194,6 +195,16 @@ def _dedupe_map_cells(map_df):
     return out.drop(columns=temp_columns) if temp_columns else out
 
 
+def _attach_remaining_cii(map_df):
+    if map_df is None or map_df.empty:
+        return map_df
+    out = map_df.copy()
+    predicted = pd.to_numeric(out.get("pred_next_3h_cii", 0.0), errors="coerce").fillna(0.0)
+    relief = pd.to_numeric(out.get("expected_relief", 0.0), errors="coerce").fillna(0.0)
+    out["remaining_next_3h_cii"] = (predicted - relief).clip(lower=0.0)
+    return out
+
+
 def build_map_rows(artifacts, station=None, min_support=0.0, query=None, limit=300):
     cii_df = artifacts.get("cii")
     deployment = _deployment_df(artifacts)
@@ -205,6 +216,7 @@ def build_map_rows(artifacts, station=None, min_support=0.0, query=None, limit=3
     map_df = _with_labels(map_df)
     map_df = _apply_filters(map_df, station=station, min_support=min_support, query=query)
     map_df = _dedupe_map_cells(map_df)
+    map_df = _attach_remaining_cii(map_df)
     if "deployment_score" in map_df.columns:
         map_df = map_df.sort_values("deployment_score", ascending=False, kind="mergesort")
     if limit:

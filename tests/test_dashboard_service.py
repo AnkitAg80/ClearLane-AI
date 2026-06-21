@@ -134,6 +134,16 @@ def test_build_map_rows_includes_ui_ready_metric_fields():
     assert rows[0]["map_label"] == "Beta Road"
     assert rows[0]["metric_values"]["deployment_score"] == 0.42
     assert rows[0]["metric_values"]["officers_assigned"] == 1
+    assert rows[0]["metric_values"]["remaining_next_3h_cii"] == 4.5
+
+
+def test_build_map_rows_clips_remaining_cii_after_large_relief():
+    artifacts = _sample_artifacts()
+    artifacts["deployment"].loc[0, "expected_relief"] = 50.0
+
+    rows = build_map_rows(artifacts, station="Station 1", min_support=0.2)
+
+    assert rows[0]["metric_values"]["remaining_next_3h_cii"] == 0.0
 
 
 def test_build_map_rows_deduplicates_h3_cells_and_keeps_strongest_cell_signal():

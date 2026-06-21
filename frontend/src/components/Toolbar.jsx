@@ -52,9 +52,10 @@ export default function Toolbar({
 
   const metricOptions = [
     { value: 'deployment_score', label: 'Score', description: 'AI-driven urgency score combining current congestion, historical patterns, and severity to prioritize deployments.' },
-    { value: 'pred_next_3h_cii', label: 'Next 3h', description: 'The predicted Congestion Intensity Index (CII) for the next 3 hours.' },
+    { value: 'pred_next_3h_cii', label: 'Forecast', description: 'The predicted Congestion Impact Index (CII) before deployment over the next 3 hours.' },
+    { value: 'remaining_next_3h_cii', label: 'After deployment', description: 'Estimated remaining next-3-hour CII after subtracting expected officer relief.' },
     { value: 'officers_assigned', label: 'Officers', description: 'The recommended number of police officers to be deployed to this specific area.' },
-    { value: 'expected_relief', label: 'Relief', description: 'The estimated reduction in traffic congestion achieved by assigning officers here.' },
+    { value: 'expected_relief', label: 'Relief', description: 'Estimated CII reduction units achieved by assigning officers here.' },
   ];
 
   return (
@@ -85,10 +86,11 @@ export default function Toolbar({
         <button
           type="button"
           onClick={handleSearch}
-          style={{ background: 'transparent', border: 'none', color: 'var(--muted)', padding: 0, display: 'flex', alignItems: 'center' }}
+          className="search-submit"
           aria-label="Submit search"
         >
           <Search size={16} aria-hidden="true" />
+          <span>Search</span>
         </button>
 
         {showDropdown && localQuery && filteredStations.length > 0 && (

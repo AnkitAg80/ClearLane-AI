@@ -19,3 +19,10 @@ def test_command_map_renders_hotspots_as_flat_translucent_overlay():
     assert "extruded: false" in source
     assert "elevationScale" not in source
     assert "getElevation" not in source
+
+
+def test_command_map_offers_after_deployment_metric():
+    source = COMMAND_MAP.read_text(encoding="utf-8")
+
+    assert "remaining_next_3h_cii" in source
+    assert "Remaining Next 3h CII" in source
