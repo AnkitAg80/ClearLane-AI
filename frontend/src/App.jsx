@@ -223,10 +223,6 @@ export default function App() {
             <span className="kicker">Next-3-hour forecast and officer allocation</span>
             <h1>Operational deployment cockpit</h1>
           </div>
-          <button type="button" className="primary-button" onClick={loadStaticData}>
-            <RefreshCw size={16} aria-hidden="true" />
-            Refresh
-          </button>
         </header>
 
         {activeView !== 'deployments' && (
