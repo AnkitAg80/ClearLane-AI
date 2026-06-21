@@ -20,7 +20,9 @@ import {
   getHotspots,
   getMapRows,
   getOverview,
+  optimizeDeployment,
 } from './api';
+import BudgetCard from './components/BudgetCard';
 import CommandMap from './components/CommandMap';
 import DeploymentView from './components/DeploymentView';
 import EvidenceView from './components/EvidenceView';
@@ -82,6 +84,8 @@ export default function App() {
   const [metricMode, setMetricMode] = useState('deployment_score');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [optimizing, setOptimizing] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(Date.now());
   const [error, setError] = useState('');
 
   const filters = useMemo(() => ({
@@ -114,6 +118,20 @@ export default function App() {
     Promise.resolve().then(loadStaticData);
   }, [loadStaticData]);
 
+  const handleOptimize = async (budget) => {
+    setOptimizing(true);
+    setError('');
+    try {
+      await optimizeDeployment(budget);
+      await loadStaticData();
+      setLastUpdated(Date.now());
+    } catch (err) {
+      setError(err.message || 'Unable to optimize deployment.');
+    } finally {
+      setOptimizing(false);
+    }
+  };
+
   useEffect(() => {
     let cancelled = false;
     async function loadFilteredData() {
@@ -137,7 +155,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [filters, selectedH3]);
+  }, [filters, selectedH3, lastUpdated]);
 
   useEffect(() => {
     if (!selectedH3) {
@@ -223,7 +241,11 @@ export default function App() {
         />
 
         <section className="metrics-grid metrics-grid--compact" aria-label="Command summary">
-          <MetricCard icon={Crosshair} label="Assigned Personnel" value={summary.officers_deployed ?? 0} tone="success" tooltip="Total available police personnel strategically allocated across all active zones." />
+          <BudgetCard 
+            deployedCount={summary.officers_deployed} 
+            onOptimize={handleOptimize} 
+            isLoading={optimizing} 
+          />
           <MetricCard icon={Activity} label="Critical Zones" value={summary.active_cells ?? 0} tone="info" tooltip="Total number of high-priority targeted areas requiring immediate intervention." />
           <MetricCard icon={TrendingUp} label="Est. Traffic Relief" value={formatNumber(summary.expected_relief)} tone="success" tooltip="Predicted reduction in traffic congestion achieved by executing this deployment plan." />
           <MetricCard icon={ShieldAlert} label="AI Optimization Lift" value={`${formatNumber(highlights.lift_pct, 1)}%`} tone="warning" tooltip="Percentage improvement in congestion relief compared to a reactive, purely historical deployment." />

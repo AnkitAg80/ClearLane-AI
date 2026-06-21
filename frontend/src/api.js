@@ -41,3 +41,17 @@ export function getDeployment() {
 export function getEvidence() {
   return request('/api/evidence');
 }
+
+export async function optimizeDeployment(officerBudget) {
+  const url = new URL('/api/optimize', window.location.origin);
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...jsonHeaders },
+    body: JSON.stringify({ officer_budget: officerBudget }),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Request failed: ${response.status}`);
+  }
+  return response.json();
+}

@@ -26,6 +26,11 @@ from app.dashboard_service import (
     build_map_rows,
     build_overview_payload,
 )
+from pydantic import BaseModel
+import copy
+from src.optimize import allocate_officers, relief_from_assignments
+from src.evaluate import deployment_roi
+
 
 app = FastAPI(title="Gridlock API")
 
@@ -121,6 +126,66 @@ def get_dashboard_data():
         },
         "bbox": cfg["geo"]["bbox"] if "geo" in cfg else None
     }
+
+
+class OptimizeRequest(BaseModel):
+    officer_budget: int
+
+@app.post("/api/optimize")
+def optimize_deployment(req: OptimizeRequest):
+    global base_plan_df, roi_metrics, map_df, cii_df
+    
+    if base_plan_df.empty:
+        raise HTTPException(status_code=400, detail="Base deployment plan not loaded.")
+        
+    cfg_copy = copy.deepcopy(cfg)
+    cfg_copy["optimize"]["officer_budget"] = req.officer_budget
+    
+    # We use base_plan_df as the input forecast_df.
+    score_col = cfg_copy["forecast"].get("deployment_score_column", "pred_next_3h_cii")
+    if score_col not in base_plan_df.columns:
+        score_col = "pred_next_3h_cii"
+        
+    plan = allocate_officers(base_plan_df, cfg_copy, score_col=score_col)
+    plan["expected_relief"] = relief_from_assignments(plan, "forecast_cii", cfg_copy)
+    
+    reactive_input = base_plan_df.copy()
+    if "current_violation_count" in reactive_input.columns:
+        reactive_input["pred_cii"] = reactive_input["current_violation_count"]
+    else:
+        reactive_input["pred_cii"] = 0
+    reactive_plan = allocate_officers(reactive_input, cfg_copy, score_col="pred_cii")
+    reactive_plan["expected_relief"] = relief_from_assignments(reactive_plan, "forecast_cii", cfg_copy)
+    
+    new_roi_metrics = deployment_roi(plan, reactive_plan)
+    
+    # Update global state
+    base_plan_df = plan
+    roi_metrics = new_roi_metrics
+    
+    # Rebuild map_df
+    if cii_df is not None and not base_plan_df.empty:
+        cii_for_map = cii_df
+        if "h3" in cii_df.columns and "h3" in base_plan_df.columns:
+            cii_for_map = cii_df[cii_df["h3"].isin(base_plan_df["h3"].dropna().unique())]
+        map_df = prepare_map_dataframe(cii_for_map, base_plan_df)
+        cii_timestamp_col = "bucket" if "bucket" in map_df.columns else None
+        if cii_timestamp_col:
+            map_df = map_df.sort_values(cii_timestamp_col).drop_duplicates("h3", keep="last")
+        else:
+            map_df = map_df.drop_duplicates("h3")
+            
+    # Persist artifacts to disk
+    try:
+        import json
+        plan.to_parquet(os.path.join(processed_dir, "deployment_plan.parquet"))
+        reactive_plan.to_parquet(os.path.join(processed_dir, "reactive_deployment_plan.parquet"))
+        with open(os.path.join(processed_dir, "roi_metrics.json"), "w", encoding="utf-8") as f:
+            json.dump(roi_metrics, f, indent=2)
+    except Exception as e:
+        print(f"Error persisting new deployment: {e}")
+        
+    return {"status": "success", "officer_budget": req.officer_budget}
 
 
 @app.get("/api/health")

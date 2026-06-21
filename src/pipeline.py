@@ -13,18 +13,7 @@ from src.forecast import save_model_artifacts, train_lgbm, predict_lgbm, add_tra
 from src.optimize import allocate_officers
 from src.evaluate import deployment_roi, evaluate_forecast, evaluate_by_timestamp, regression_metrics, top_k_overlap, top_k_recall, ndcg_at_k
 from src.temporal_panel import build_hourly_panel, add_temporal_features, add_spatial_ring_features
-
-
-def _relief_from_assignments(df, relief_col, cfg):
-    eff = cfg["optimize"]["effectiveness_base"]
-    decay = cfg["optimize"]["decay_factor"]
-    relief = []
-    for row in df.itertuples(index=False):
-        base = getattr(row, relief_col)
-        assigned = int(getattr(row, "officers_assigned"))
-        total = sum(base * eff * (decay ** k) for k in range(assigned))
-        relief.append(float(total))
-    return relief
+from src.optimize import allocate_officers, relief_from_assignments
 
 
 def _limit_training_rows(train_df, target_col, cfg):
@@ -205,8 +194,8 @@ def run(cfg, sample=None, with_roadctx=True, with_mappls=False, run_phase3=False
         reactive_plan = allocate_officers(reactive_input, cfg, score_col="pred_cii")
         reactive_plan["forecast_cii"] = deployment_input[pred_col].values
         plan["forecast_cii"] = deployment_input[pred_col].values
-        plan["expected_relief"] = _relief_from_assignments(plan, "forecast_cii", cfg)
-        reactive_plan["expected_relief"] = _relief_from_assignments(reactive_plan, "forecast_cii", cfg)
+        plan["expected_relief"] = relief_from_assignments(plan, "forecast_cii", cfg)
+        reactive_plan["expected_relief"] = relief_from_assignments(reactive_plan, "forecast_cii", cfg)
         roi_metrics = deployment_roi(plan, reactive_plan)
 
         plan.to_parquet(os.path.join(out, "deployment_plan.parquet"))

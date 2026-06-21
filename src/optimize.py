@@ -2,6 +2,17 @@ import pandas as pd
 import heapq
 import itertools
 
+def relief_from_assignments(df, relief_col, cfg):
+    eff = cfg["optimize"]["effectiveness_base"]
+    decay = cfg["optimize"]["decay_factor"]
+    relief = []
+    for row in df.itertuples(index=False):
+        base = getattr(row, relief_col)
+        assigned = int(getattr(row, "officers_assigned"))
+        total = sum(base * eff * (decay ** k) for k in range(assigned))
+        relief.append(float(total))
+    return relief
+
 def allocate_officers(forecast_df, cfg, score_col="pred_cii"):
     """Greedy submodular allocation of officers to maximize congestion relief."""
     budget = cfg["optimize"]["officer_budget"]
