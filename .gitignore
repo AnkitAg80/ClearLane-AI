@@ -1,15 +1,14 @@
 .venv/
 __pycache__/
 *.pyc
-data/processed/
-data/cache/
+data/
 dataset/
 cache/
 .claude/
 .pytest_cache/
 .env
 scripts/_mappls_samples/
-docs/
+docs/superpowers/
 .agent/
 .codex/
 .vscode/
