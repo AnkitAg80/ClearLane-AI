@@ -240,10 +240,10 @@ export default function App() {
         />
 
         <section className="metrics-grid metrics-grid--compact" aria-label="Command summary">
-          <BudgetCard 
-            deployedCount={summary.officers_deployed} 
-            onOptimize={handleOptimize} 
-            isLoading={optimizing} 
+          <BudgetCard
+            deployedCount={summary.officers_deployed}
+            onOptimize={handleOptimize}
+            isLoading={optimizing}
           />
           <MetricCard icon={Activity} label="Critical Zones" value={summary.active_cells ?? 0} tone="info" tooltip="Total number of high-priority targeted areas requiring immediate intervention." />
           <MetricCard icon={TrendingUp} label="Est. Traffic Relief" value={formatNumber(summary.expected_relief)} tone="success" tooltip="Predicted reduction in traffic congestion achieved by executing this deployment plan." />
