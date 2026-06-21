@@ -55,6 +55,8 @@ METRIC_COLUMNS = [
     "data_quality_score",
 ]
 
+MAX_SEARCH_SUGGESTIONS = 500
+
 
 def _json_scalar(value: Any):
     if value is None:
@@ -125,18 +127,55 @@ def _with_labels(df):
 
 def build_filter_options(plan_df):
     if plan_df is None or plan_df.empty:
-        return {"stations": [], "support": {"min": 0.0, "max": 1.0}}
+        return {"stations": [], "suggestions": [], "support": {"min": 0.0, "max": 1.0}}
     stations = []
     if "top_police_station" in plan_df.columns:
         stations = sorted(str(s) for s in plan_df["top_police_station"].dropna().unique())
+    suggestions = build_search_suggestions(plan_df)
     if "support_score" in plan_df.columns:
         support = pd.to_numeric(plan_df["support_score"], errors="coerce").dropna()
         if not support.empty:
             return {
                 "stations": stations,
+                "suggestions": suggestions,
                 "support": {"min": float(support.min()), "max": float(support.max())},
             }
-    return {"stations": stations, "support": {"min": 0.0, "max": 1.0}}
+    return {"stations": stations, "suggestions": suggestions, "support": {"min": 0.0, "max": 1.0}}
+
+
+def build_search_suggestions(plan_df, limit=MAX_SEARCH_SUGGESTIONS):
+    if plan_df is None or plan_df.empty or "top_location" not in plan_df.columns:
+        return []
+    out = _with_labels(plan_df)
+    out = out.copy()
+    out["__location"] = out["top_location"].fillna("").astype(str).str.strip()
+    out = out[out["__location"] != ""]
+    if out.empty:
+        return []
+    if "deployment_score" in out.columns:
+        out["__score"] = pd.to_numeric(out["deployment_score"], errors="coerce").fillna(0.0)
+        out = out.sort_values("__score", ascending=False, kind="mergesort")
+    out = out.drop_duplicates("__location", keep="first")
+    if limit:
+        out = out.head(int(limit))
+
+    suggestions = []
+    for row in _records(out):
+        junction = row.get("top_junction")
+        if junction == "No Junction":
+            junction = None
+        station = row.get("top_police_station")
+        parts = [part for part in [station, junction] if part]
+        suggestions.append({
+            "type": "location",
+            "label": row.get("__location"),
+            "value": row.get("__location"),
+            "station": station,
+            "junction": junction,
+            "h3": row.get("h3"),
+            "secondary": " · ".join(parts) if parts else row.get("h3"),
+        })
+    return suggestions
 
 
 def build_overview_payload(artifacts, artifact_rows=None):

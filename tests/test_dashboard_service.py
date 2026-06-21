@@ -10,6 +10,7 @@ from app.dashboard_service import (
     build_hotspot_rows,
     build_map_rows,
     build_overview_payload,
+    build_search_suggestions,
 )
 
 
@@ -100,8 +101,30 @@ def test_build_filter_options_returns_stations_and_support_bounds():
     filters = build_filter_options(_sample_artifacts()["deployment"])
 
     assert filters["stations"] == ["Station 1", "Station 2"]
+    assert filters["suggestions"][0]["label"] == "Alpha Road"
+    assert filters["suggestions"][0]["type"] == "location"
     assert filters["support"]["min"] == 0.25
     assert filters["support"]["max"] == 0.75
+
+
+def test_build_search_suggestions_prefers_unique_locations_with_context():
+    artifacts = _sample_artifacts()
+    artifacts["deployment"] = pd.concat([
+        artifacts["deployment"],
+        pd.DataFrame([{
+            "h3": "cell-c",
+            "top_location": "Alpha Road",
+            "top_junction": "Junction C",
+            "top_police_station": "Station 3",
+            "deployment_score": 0.1,
+        }]),
+    ], ignore_index=True)
+
+    suggestions = build_search_suggestions(artifacts["deployment"])
+
+    assert [item["label"] for item in suggestions] == ["Alpha Road", "Beta Road"]
+    assert suggestions[0]["value"] == "Alpha Road"
+    assert suggestions[0]["secondary"] == "Station 1 · Junction A"
 
 
 def test_build_overview_payload_returns_summary_and_filters():
@@ -111,6 +134,7 @@ def test_build_overview_payload_returns_summary_and_filters():
     assert payload["summary"]["active_cells"] == 2
     assert payload["highlights"]["lift_pct"] == 125.0
     assert payload["filters"]["stations"] == ["Station 1", "Station 2"]
+    assert payload["filters"]["suggestions"][1]["label"] == "Beta Road"
     assert payload["artifacts"][0]["artifact"] == "cell_cii.parquet"
 
 

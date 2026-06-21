@@ -177,6 +177,7 @@ export default function App() {
   }, [selectedH3]);
 
   const stations = overview?.filters?.stations || [];
+  const searchSuggestions = overview?.filters?.suggestions || [];
   const summary = overview?.summary || {};
   const highlights = overview?.highlights || {};
 
@@ -259,6 +260,7 @@ export default function App() {
         {activeView !== 'home' && activeView !== 'deployments' && activeView !== 'evidence' && (
           <Toolbar
             stations={stations}
+            searchSuggestions={searchSuggestions}
             station={station}
             setStation={setStation}
             query={query}
@@ -323,6 +325,7 @@ export default function App() {
                 isLoading={optimizing}
                 toolbarProps={{
                   stations,
+                  searchSuggestions,
                   station,
                   setStation,
                   query,

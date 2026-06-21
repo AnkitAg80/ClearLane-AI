@@ -3,20 +3,13 @@ import {
   Activity,
   AlertTriangle,
   ArrowRight,
-  BrainCircuit,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
   Clock,
   Database,
-  Info,
   LineChart,
   Map,
   ShieldCheck,
   Target,
-  XCircle,
 } from 'lucide-react';
-import MetricCard from './MetricCard';
 import Panel from './Panel';
 
 function getFriendlySignalGroup(rawName) {
@@ -65,16 +58,9 @@ function processFeatures(rows) {
 
 export default function EvidenceView({ evidence }) {
   const [activeTab, setActiveTab] = useState('forecast');
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const backtest = evidence?.backtest || {};
-  const roi = evidence?.roi || {};
   const model = evidence?.model || {};
   const features = evidence?.feature_importance || {};
-  const artifacts = evidence?.artifacts || [];
-
-  const top25Recall = Number(backtest.deployment_score_top25_recall || 0);
-  const ndcg25 = Number(backtest.deployment_score_ndcg_at_25 || 0);
 
   const forecastGroups = processFeatures(features.regression);
   const rankerGroups = processFeatures(features.ranker);
@@ -263,48 +249,6 @@ export default function EvidenceView({ evidence }) {
             </div>
           </div>
         </Panel>
-      </div>
-
-      {/* Section 8: Advanced model metrics */}
-      <div style={{ background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: '8px', overflow: 'hidden' }}>
-        <button
-          type="button"
-          onClick={() => setShowAdvanced(!showAdvanced)}
-          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px', background: 'var(--panel-2)', border: 'none', color: 'var(--text)', fontSize: '14px', fontWeight: 600 }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Database size={16} style={{ color: 'var(--muted)' }} />
-            Advanced model diagnostics (Engineering)
-          </div>
-          {showAdvanced ? <ChevronDown size={18} style={{ color: 'var(--muted)' }} /> : <ChevronRight size={18} style={{ color: 'var(--muted)' }} />}
-        </button>
-        
-        {showAdvanced && (
-          <div style={{ padding: '16px', borderTop: '1px solid var(--line)' }}>
-            <div className="metrics-grid metrics-grid--compact" style={{ marginBottom: '24px' }}>
-              <MetricCard icon={LineChart} label="Raw Top-25 Recall" value={top25Recall.toFixed(3)} tone="info" tooltip="Proportion of actual critical hotspots correctly identified within the top 25 recommendations." />
-              <MetricCard icon={ShieldCheck} label="Raw NDCG@25" value={ndcg25.toFixed(3)} tone="info" tooltip="Normalized Discounted Cumulative Gain at rank 25. Measures the exact ranking order quality." />
-              <MetricCard icon={BrainCircuit} label="Ranker Status" value={model.ranker_enabled ? 'Enabled' : 'Disabled'} tone="warning" tooltip="Indicates if the secondary AI ranking model is actively reprioritizing the regression output." />
-              <MetricCard icon={Database} label="Total Features" value={(model.features || []).length} tone="muted" tooltip="Total number of raw signals and historical features fed into the machine learning models." />
-            </div>
-
-            <h4 style={{ fontSize: '14px', color: 'var(--text)', marginBottom: '12px' }}>Raw Artifact Registry</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '8px' }}>
-              {artifacts.map((item) => (
-                <div key={item.artifact} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: '4px', border: '1px solid var(--line)' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={item.artifact}>
-                    {item.artifact}
-                  </span>
-                  {item.exists ? (
-                    <span style={{ fontSize: '11px', color: 'var(--green)', flexShrink: 0, whiteSpace: 'nowrap' }}>{Number(item.size_mb || 0).toFixed(3)} MB</span>
-                  ) : (
-                    <span style={{ fontSize: '11px', color: 'var(--red)', flexShrink: 0, whiteSpace: 'nowrap' }}>Missing</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
     </div>

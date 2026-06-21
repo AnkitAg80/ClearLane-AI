@@ -27,6 +27,15 @@ def test_toolbar_has_explicit_search_button():
     assert "aria-label=\"Submit search\"" in source
 
 
+def test_toolbar_uses_location_suggestions_not_station_only_dropdown():
+    source = TOOLBAR.read_text(encoding="utf-8")
+
+    assert "searchSuggestions" in source
+    assert "matching locations" in source
+    assert "suggestion-meta" in source
+    assert "filteredStations" not in source
+
+
 def test_toolbar_exposes_after_deployment_map_mode():
     source = TOOLBAR.read_text(encoding="utf-8")
 

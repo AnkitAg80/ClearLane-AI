@@ -1,8 +1,9 @@
-import { Filter, Search, X } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { Search, X } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
 export default function Toolbar({
   stations,
+  searchSuggestions = [],
   station,
   setStation,
   query,
@@ -46,9 +47,31 @@ export default function Toolbar({
     }
   };
 
-  const filteredStations = stations.filter(st =>
-    st.toLowerCase().includes(localQuery.toLowerCase())
-  );
+  const filteredSuggestions = useMemo(() => {
+    const needle = localQuery.trim().toLowerCase();
+    if (!needle) return [];
+    return searchSuggestions
+      .filter((item) => {
+        const searchable = [
+          item.label,
+          item.value,
+          item.secondary,
+          item.station,
+          item.junction,
+          item.h3,
+        ].filter(Boolean).join(' ').toLowerCase();
+        return searchable.includes(needle);
+      })
+      .sort((a, b) => {
+        const aLabel = String(a.label || a.value || '').toLowerCase();
+        const bLabel = String(b.label || b.value || '').toLowerCase();
+        const aStarts = aLabel.startsWith(needle) ? 0 : 1;
+        const bStarts = bLabel.startsWith(needle) ? 0 : 1;
+        return aStarts - bStarts || aLabel.localeCompare(bLabel);
+      });
+  }, [localQuery, searchSuggestions]);
+
+  const visibleSuggestions = filteredSuggestions.slice(0, 8);
 
   const metricOptions = [
     { value: 'deployment_score', label: 'Score', description: 'AI-driven urgency score combining current congestion, historical patterns, and severity to prioritize deployments.' },
@@ -93,42 +116,27 @@ export default function Toolbar({
           <span>Search</span>
         </button>
 
-        {showDropdown && localQuery && filteredStations.length > 0 && (
-          <ul style={{
-            position: 'absolute',
-            top: 'calc(100% + 4px)',
-            left: 0,
-            right: 0,
-            backgroundColor: 'var(--panel)',
-            border: '1px solid var(--line)',
-            borderRadius: '8px',
-            listStyle: 'none',
-            margin: 0,
-            padding: '4px 0',
-            maxHeight: '240px',
-            overflowY: 'auto',
-            zIndex: 50,
-            boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
-          }}>
-            {filteredStations.map((item) => (
-              <li
-                key={item}
-                style={{
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  color: 'var(--text)',
-                  transition: 'background-color 0.15s ease'
-                }}
-                onClick={() => {
-                  setLocalQuery(item);
-                  setQuery(item);
-                  setShowDropdown(false);
-                }}
-                onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(34, 197, 94, 0.1)'}
-                onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-              >
-                {item}
+        {showDropdown && localQuery && visibleSuggestions.length > 0 && (
+          <ul className="search-suggestions" aria-label="Location search suggestions">
+            <li className="suggestions-header">
+              {filteredSuggestions.length === visibleSuggestions.length
+                ? `${filteredSuggestions.length} matching ${filteredSuggestions.length === 1 ? 'location' : 'locations'}`
+                : `Showing ${visibleSuggestions.length} of ${filteredSuggestions.length} matching locations`}
+            </li>
+            {visibleSuggestions.map((item) => (
+              <li key={`${item.type}-${item.value}-${item.h3 || item.secondary || ''}`}>
+                <button
+                  type="button"
+                  className="suggestion-option"
+                  onClick={() => {
+                    setLocalQuery(item.value);
+                    setQuery(item.value);
+                    setShowDropdown(false);
+                  }}
+                >
+                  <span className="suggestion-label">{item.label || item.value}</span>
+                  {item.secondary && <span className="suggestion-meta">{item.secondary}</span>}
+                </button>
               </li>
             ))}
           </ul>
