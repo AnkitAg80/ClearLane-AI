@@ -5,6 +5,7 @@ import {
   BrainCircuit,
   Crosshair,
   Database,
+  Home,
   Map,
   RefreshCw,
   Route,
@@ -26,6 +27,7 @@ import BudgetCard from './components/BudgetCard';
 import CommandMap from './components/CommandMap';
 import DeploymentsView from './components/DeploymentsView';
 import EvidenceView from './components/EvidenceView';
+import HomeView from './components/HomeView';
 import HotspotDetail from './components/HotspotDetail';
 import HotspotTable from './components/HotspotTable';
 import MetricCard from './components/MetricCard';
@@ -33,6 +35,7 @@ import Panel from './components/Panel';
 import Toolbar from './components/Toolbar';
 
 const views = [
+  { id: 'home', label: 'Home', icon: Home },
   { id: 'command', label: 'Command', icon: Map },
   { id: 'deployments', label: 'Deployments', icon: Route },
   { id: 'explain', label: 'Explain', icon: Target },
@@ -76,7 +79,7 @@ export default function App() {
   const [deployment, setDeployment] = useState(null);
   const [evidence, setEvidence] = useState(null);
   const [detail, setDetail] = useState(null);
-  const [activeView, setActiveView] = useState('command');
+  const [activeView, setActiveView] = useState('home');
   const [selectedH3, setSelectedH3] = useState(null);
   const [station, setStation] = useState('ALL');
   const [query, setQuery] = useState('');
@@ -220,12 +223,40 @@ export default function App() {
       <main className="workspace">
         <header className="workspace-header">
           <div>
-            <span className="kicker">Next-3-hour forecast and officer allocation</span>
-            <h1>Operational deployment cockpit</h1>
+            {activeView === 'home' && (
+              <>
+                <span className="kicker">Next-3-hour forecast and officer allocation</span>
+                <h1>Operational deployment cockpit</h1>
+              </>
+            )}
+            {activeView === 'command' && (
+              <>
+                <span className="kicker">Live traffic monitoring</span>
+                <h1>Network Status</h1>
+              </>
+            )}
+            {activeView === 'deployments' && (
+              <>
+                <span className="kicker">Resource allocation</span>
+                <h1>Active Deployments</h1>
+              </>
+            )}
+            {activeView === 'explain' && (
+              <>
+                <span className="kicker">Hotspot diagnosis</span>
+                <h1>AI Explanation Console</h1>
+              </>
+            )}
+            {activeView === 'evidence' && (
+              <>
+                <span className="kicker">Model validation</span>
+                <h1>AI Trust Console</h1>
+              </>
+            )}
           </div>
         </header>
 
-        {activeView !== 'deployments' && (
+        {activeView !== 'home' && activeView !== 'deployments' && activeView !== 'evidence' && (
           <Toolbar
             stations={stations}
             station={station}
@@ -238,7 +269,7 @@ export default function App() {
           />
         )}
 
-        {activeView !== 'deployments' && activeView !== 'explain' && (
+        {activeView !== 'home' && activeView !== 'deployments' && activeView !== 'explain' && (
           <section className="metrics-grid metrics-grid--compact" aria-label="Command summary">
             <BudgetCard
               deployedCount={summary.officers_deployed}
@@ -262,6 +293,10 @@ export default function App() {
             transition={{ duration: 0.18 }}
             className="view-surface"
           >
+            {activeView === 'home' && (
+              <HomeView setActiveView={setActiveView} />
+            )}
+
             {activeView === 'command' && (
               <div className="command-layout">
                 <Panel title="Command Map" eyebrow={`${mapRows.length} cells`}>
