@@ -18,4 +18,4 @@ def test_hotspot_detail_removes_unwired_operator_buttons():
 
     assert "Deploy {assigned} Officers" not in source
     assert "Open in Command Map" not in source
-    assert "Operator Guidance" in source
+    assert "Operator Guidance" not in source

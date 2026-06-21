@@ -275,18 +275,7 @@ export default function HotspotDetail({ detail, compact = false }) {
         </div>
       </div>
 
-      {/* 10. Operator guidance */}
-      <div style={{ background: 'var(--panel)', padding: '20px', borderRadius: '8px', border: '1px solid var(--line)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <ShieldAlert size={24} style={{ color: 'var(--text)' }} />
-          <div>
-            <h3 style={{ fontSize: '16px', margin: '0 0 4px 0', color: 'var(--text)' }}>Operator Guidance</h3>
-            <div style={{ fontSize: '13px', color: 'var(--muted)' }}>
-              Use the Command Center map to select another location, or use Active Deployments to change officer budgets.
-            </div>
-          </div>
-        </div>
-      </div>
+
       </>
       )}
     </div>
