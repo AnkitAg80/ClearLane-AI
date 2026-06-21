@@ -171,23 +171,29 @@ export default function EvidenceView({ evidence }) {
       </Panel>
 
       <div className="two-col">
-        {/* Section 6: Data & pipeline status */}
-        <Panel title="Data & pipeline status" eyebrow="System Health">
+        {/* Section 6: Core AI Architecture */}
+        <Panel title="Core AI Architecture" eyebrow="Active Components">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {[
-              { name: 'Live congestion input', desc: 'Real-time traffic sensor ingestion.', status: 'Healthy' },
-              { name: 'Forecast engine', desc: 'Generates next-3-hour CII predictions.', status: 'Healthy' },
-              { name: 'Hotspot ranking engine', desc: 'Sorts cells by urgency and ROI.', status: 'Healthy' },
-              { name: 'Deployment optimizer', desc: 'Allocates budget across ranked cells.', status: 'Healthy' },
-              { name: 'Evaluation metrics store', desc: 'Tracks historical model performance.', status: 'Healthy' },
-            ].map((comp, idx) => (
-              <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', border: '1px solid var(--line)', borderRadius: '6px', background: 'var(--panel-2)' }}>
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>{comp.name}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{comp.desc}</div>
+              { name: 'Live Congestion Input', desc: 'Real-time traffic sensor ingestion and processing.', icon: Activity, color: 'var(--cyan)' },
+              { name: 'Forecast Engine', desc: 'Generates predictive next-3-hour impact models.', icon: LineChart, color: 'var(--amber)' },
+              { name: 'Hotspot Ranking Engine', desc: 'Sorts problematic areas by urgency and expected ROI.', icon: Target, color: 'var(--red)' },
+              { name: 'Deployment Optimizer', desc: 'Allocates officer budget across priority zones.', icon: Map, color: 'var(--green)' },
+              { name: 'Evaluation Metrics Store', desc: 'Tracks historical accuracy and model drift.', icon: Database, color: 'var(--muted)' },
+            ].map((comp, idx) => {
+              const IconComp = comp.icon;
+              return (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', border: '1px solid var(--line)', borderRadius: '8px', background: 'var(--panel-2)' }}>
+                  <div style={{ background: 'rgba(255,255,255,0.03)', padding: '10px', borderRadius: '8px', display: 'flex', border: '1px solid var(--line)' }}>
+                    <IconComp size={20} style={{ color: comp.color }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text)', marginBottom: '4px' }}>{comp.name}</div>
+                    <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.4 }}>{comp.desc}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Panel>
 
