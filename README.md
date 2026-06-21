@@ -44,7 +44,7 @@ docs/
   NEXT_3H_MODEL.md          Forecast target, features, model architecture, and commands.
 
 data/
-  processed/                Generated model, forecast, CII, and deployment artifacts.
+  processed/                Runtime dashboard artifacts. Only the allow-listed deployment files are committed.
   cache/                    Road/network and provider caches.
 
 dataset/
@@ -238,6 +238,6 @@ If Vercel reports a Python bundle size error, confirm it is installing `requirem
 
 If the deployed Vercel page says `Frontend build not found`, confirm `vercel.json` is present in the committed branch. It runs `npm ci && npm run build` inside `frontend/` before routing requests to the FastAPI app.
 
-If the app cannot load command data, confirm that `data/processed/` contains the required parquet, CSV, JSON, and model artifacts.
+If the app cannot load command data, confirm that the required runtime artifacts in `data/processed/` are committed and present on the deployed branch. Large generated files such as `forecast_training_panel.parquet`, trained model files, cache files, and raw datasets remain ignored.
 
 If GitHub rejects a push because of large CSV files, make sure raw datasets remain inside the git-ignored `dataset/` folder and are not tracked.
