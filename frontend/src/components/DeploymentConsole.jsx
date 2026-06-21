@@ -139,25 +139,25 @@ export default function DeploymentConsole({ overview, deployment, onOptimize, is
             </thead>
             <tbody>
               <tr>
-                <td style={{ color: 'var(--muted)', cursor: 'help' }} title="Total number of police personnel allocated.">Officers Deployed</td>
+                <td style={{ color: 'var(--muted)', cursor: 'default' }} title="Total number of police personnel allocated.">Officers Deployed</td>
                 <td>{reactiveTotalOfficers}</td>
                 <td style={{ color: 'var(--green)', fontWeight: 600 }}>{optTotalOfficers}</td>
                 <td style={{ color: budget !== optTotalOfficers ? 'var(--amber)' : 'inherit' }}>{budget} <small style={{ display: 'inline', color: 'var(--muted)' }}>(simulated)</small></td>
               </tr>
               <tr>
-                <td style={{ color: 'var(--muted)', cursor: 'help' }} title="Predicted reduction in traffic congestion.">Expected Relief</td>
+                <td style={{ color: 'var(--muted)', cursor: 'default' }} title="Predicted reduction in traffic congestion.">Expected Relief</td>
                 <td>{reactiveTotalRelief.toFixed(2)}</td>
                 <td style={{ color: 'var(--green)', fontWeight: 600 }}>{optTotalRelief.toFixed(2)}</td>
                 <td style={{ color: budget !== optTotalOfficers ? 'var(--amber)' : 'inherit' }}>{predictedRelief.toFixed(2)}</td>
               </tr>
               <tr>
-                <td style={{ color: 'var(--muted)', cursor: 'help' }} title="Number of critical priority areas assigned at least one officer.">Hotspots Covered</td>
+                <td style={{ color: 'var(--muted)', cursor: 'default' }} title="Number of critical priority areas assigned at least one officer.">Hotspots Covered</td>
                 <td>{reactiveHotspots}</td>
                 <td style={{ color: 'var(--green)', fontWeight: 600 }}>{optHotspots}</td>
                 <td style={{ color: 'var(--muted)' }}>-</td>
               </tr>
               <tr>
-                <td style={{ color: 'var(--muted)', cursor: 'help' }} title="Average congestion relief achieved per deployed officer (ROI indicator).">Relief per Officer</td>
+                <td style={{ color: 'var(--muted)', cursor: 'default' }} title="Average congestion relief achieved per deployed officer (ROI indicator).">Relief per Officer</td>
                 <td>{reactiveTotalOfficers ? (reactiveTotalRelief / reactiveTotalOfficers).toFixed(2) : 0}</td>
                 <td style={{ color: 'var(--green)', fontWeight: 600 }}>{optTotalOfficers ? (optTotalRelief / optTotalOfficers).toFixed(2) : 0}</td>
                 <td style={{ color: budget !== optTotalOfficers ? 'var(--amber)' : 'inherit' }}>{budget ? (predictedRelief / budget).toFixed(2) : 0}</td>
