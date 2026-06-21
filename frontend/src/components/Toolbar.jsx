@@ -9,6 +9,7 @@ export default function Toolbar({
   setQuery,
   metricMode,
   setMetricMode,
+  activeView,
 }) {
   const [localQuery, setLocalQuery] = useState(query);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -145,19 +146,21 @@ export default function Toolbar({
         </select>
       </label>
 
-      <div className="segmented" role="group" aria-label="Map metric">
-        {metricOptions.map((item) => (
-          <button
-            key={item.value}
-            type="button"
-            className={metricMode === item.value ? 'is-active' : ''}
-            onClick={() => setMetricMode(item.value)}
-            title={item.description}
-          >
-            {item.label}
-          </button>
-        ))}
-      </div>
+      {activeView === 'command' && (
+        <div className="segmented" role="group" aria-label="Map metric">
+          {metricOptions.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              className={metricMode === item.value ? 'is-active' : ''}
+              onClick={() => setMetricMode(item.value)}
+              title={item.description}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

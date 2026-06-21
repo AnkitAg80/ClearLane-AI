@@ -229,26 +229,31 @@ export default function App() {
           </button>
         </header>
 
-        <Toolbar
-          stations={stations}
-          station={station}
-          setStation={setStation}
-          query={query}
-          setQuery={setQuery}
-          metricMode={metricMode}
-          setMetricMode={setMetricMode}
-        />
-
-        <section className="metrics-grid metrics-grid--compact" aria-label="Command summary">
-          <BudgetCard
-            deployedCount={summary.officers_deployed}
-            onOptimize={handleOptimize}
-            isLoading={optimizing}
+        {activeView !== 'deployments' && (
+          <Toolbar
+            stations={stations}
+            station={station}
+            setStation={setStation}
+            query={query}
+            setQuery={setQuery}
+            metricMode={metricMode}
+            setMetricMode={setMetricMode}
+            activeView={activeView}
           />
-          <MetricCard icon={Activity} label="Critical Zones" value={summary.active_cells ?? 0} tone="info" tooltip="Total number of high-priority targeted areas requiring immediate intervention." />
-          <MetricCard icon={TrendingUp} label="Est. Traffic Relief" value={formatNumber(summary.expected_relief)} tone="success" tooltip="Predicted reduction in traffic congestion achieved by executing this deployment plan." />
-          <MetricCard icon={ShieldAlert} label="AI Optimization Lift" value={`${formatNumber(highlights.lift_pct, 1)}%`} tone="warning" tooltip="Percentage improvement in congestion relief compared to a reactive, purely historical deployment." />
-        </section>
+        )}
+
+        {activeView !== 'deployments' && (
+          <section className="metrics-grid metrics-grid--compact" aria-label="Command summary">
+            <BudgetCard
+              deployedCount={summary.officers_deployed}
+              onOptimize={handleOptimize}
+              isLoading={optimizing}
+            />
+            <MetricCard icon={Activity} label="Critical Zones" value={summary.active_cells ?? 0} tone="info" tooltip="Total number of high-priority targeted areas requiring immediate intervention." />
+            <MetricCard icon={TrendingUp} label="Est. Traffic Relief" value={formatNumber(summary.expected_relief)} tone="success" tooltip="Predicted reduction in traffic congestion achieved by executing this deployment plan." />
+            <MetricCard icon={ShieldAlert} label="AI Optimization Lift" value={`${formatNumber(highlights.lift_pct, 1)}%`} tone="warning" tooltip="Percentage improvement in congestion relief compared to a reactive, purely historical deployment." />
+          </section>
+        )}
 
         {error && <div className="inline-alert">{error}</div>}
 
@@ -277,7 +282,25 @@ export default function App() {
             )}
 
             {activeView === 'deployments' && (
-              <DeploymentsView deployment={deployment} hotspots={hotspots} selectedH3={selectedH3} onSelect={setSelectedH3} />
+              <DeploymentsView 
+                overview={overview}
+                deployment={deployment}
+                hotspots={hotspots} 
+                selectedH3={selectedH3} 
+                onSelect={setSelectedH3} 
+                onOptimize={handleOptimize}
+                isLoading={optimizing}
+                toolbarProps={{
+                  stations,
+                  station,
+                  setStation,
+                  query,
+                  setQuery,
+                  metricMode,
+                  setMetricMode,
+                  activeView
+                }}
+              />
             )}
 
             {activeView === 'explain' && <HotspotDetail detail={detail} />}
