@@ -133,18 +133,7 @@ export default function Toolbar({
         )}
       </label>
 
-      <label className="field">
-        <Filter size={16} aria-hidden="true" />
-        <span className="sr-only">Police station</span>
-        <select value={station} onChange={(event) => setStation(event.target.value)}>
-          <option value="ALL">All stations</option>
-          {stations.map((item) => (
-            <option key={item} value={item}>
-              {item}
-            </option>
-          ))}
-        </select>
-      </label>
+
 
       {activeView === 'command' && (
         <div className="segmented" role="group" aria-label="Map metric">
