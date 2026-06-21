@@ -214,8 +214,8 @@ button {
 
 .toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1.1fr) minmax(180px, 260px) auto;
-  gap: 10px;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
   align-items: center;
   margin-bottom: 14px;
 }

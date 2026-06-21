@@ -35,7 +35,7 @@ import Panel from './components/Panel';
 import Toolbar from './components/Toolbar';
 
 const views = [
-  { id: 'home', label: 'Home Dashboard', icon: Home },
+  { id: 'home', label: 'Dashboard', icon: Home },
   { id: 'command', label: 'Command Center', icon: Map },
   { id: 'deployments', label: 'Active Deployments', icon: Route },
   { id: 'explain', label: 'AI Explanation Console', icon: Target },
@@ -232,7 +232,7 @@ export default function App() {
             {activeView === 'command' && (
               <>
                 <span className="kicker">Live traffic monitoring</span>
-                <h1>Network Status</h1>
+                <h1>Command Center</h1>
               </>
             )}
             {activeView === 'deployments' && (
@@ -299,7 +299,7 @@ export default function App() {
 
             {activeView === 'command' && (
               <div className="command-layout">
-                <Panel title="Command Map" eyebrow={`${mapRows.length} cells`}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--line)' }}>
                   <CommandMap
                     rows={mapRows}
                     bbox={overview?.bbox}
@@ -307,8 +307,8 @@ export default function App() {
                     onSelect={setSelectedH3}
                     metricMode={metricMode}
                   />
-                </Panel>
-                <HotspotDetail detail={detail} />
+                </div>
+                <HotspotDetail detail={detail} compact={true} />
               </div>
             )}
 

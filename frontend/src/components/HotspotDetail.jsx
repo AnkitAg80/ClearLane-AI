@@ -34,11 +34,11 @@ const getCategory = (name) => {
   return 'Congestion pressure';
 };
 
-export default function HotspotDetail({ detail }) {
+export default function HotspotDetail({ detail, compact = false }) {
   if (!detail) {
     return (
-      <div className="empty-state" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        Select a hotspot from the map or table to view AI explanation.
+      <div className="empty-state" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', textAlign: 'center', color: 'var(--muted)' }}>
+        {compact ? "Select a cell to view details." : "Select a hotspot from the map or table to view AI explanation."}
       </div>
     );
   }
@@ -87,17 +87,6 @@ export default function HotspotDetail({ detail }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px' }}>
           <h2 style={{ fontSize: '28px', fontWeight: 700, margin: 0, color: 'var(--text)', lineHeight: 1.2 }}>{detail.title}</h2>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <span style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '14px', fontWeight: 600, background: priorityTier === 'Critical' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)', color: priorityTier === 'Critical' ? 'var(--red)' : 'var(--amber)', border: `1px solid ${priorityTier === 'Critical' ? 'var(--red)' : 'var(--amber)'}` }}>
-              {priorityTier} Priority
-            </span>
-            <span style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '14px', fontWeight: 600, background: assigned > 0 ? 'rgba(34, 197, 94, 0.15)' : 'rgba(100, 116, 139, 0.15)', color: assigned > 0 ? 'var(--green)' : 'var(--muted)', border: `1px solid ${assigned > 0 ? 'var(--green)' : 'var(--muted)'}` }}>
-              {recStatus}
-            </span>
-          </div>
-        </div>
-        <div style={{ marginTop: '12px', fontSize: '15px', color: 'var(--muted)' }}>
-          Ranked #{rank} in priority queue
         </div>
       </div>
 
@@ -111,24 +100,26 @@ export default function HotspotDetail({ detail }) {
         </ul>
       </div>
 
-      {/* 2. Decision Summary Strip */}
-      <div style={{ background: 'var(--panel)', padding: '20px', borderRadius: '8px', border: '1px solid var(--line)', fontSize: '16px', lineHeight: 1.6, color: 'var(--text)' }}>
-        <strong>AI Assessment:</strong> This hotspot is prioritized because forecasted congestion is {priorityTier.toLowerCase()}, time-of-day pressure is elevated, and road capacity stress is increasing. 
-        {assigned > 0 
-          ? ` Deploying ${assigned} officers here is expected to reduce congestion impact by ${relief.toFixed(1)} CII points over the next 3 hours.` 
-          : ` No officers are recommended at this time due to lower expected ROI.`}
-      </div>
+      {!compact && (
+        <>
+          {/* 2. Decision Summary Strip */}
+          <div style={{ background: 'var(--panel)', padding: '20px', borderRadius: '8px', border: '1px solid var(--line)', fontSize: '16px', lineHeight: 1.6, color: 'var(--text)' }}>
+            <strong>AI Assessment:</strong> This hotspot is prioritized because forecasted congestion is {priorityTier.toLowerCase()}, time-of-day pressure is elevated, and road capacity stress is increasing. 
+            {assigned > 0 
+              ? ` Deploying ${assigned} officers here is expected to reduce congestion impact by ${relief.toFixed(1)} CII points over the next 3 hours.` 
+              : ` No officers are recommended at this time due to lower expected ROI.`}
+          </div>
 
-      {/* 3. Decision Snapshot Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
-        <MetricCard icon={Radar} label={`Priority Score (${priorityTier})`} value={priorityScore.toFixed(3)} tone="danger" />
-        <MetricCard icon={Activity} label="Forecasted Impact (Next 3h)" value={forecastedCii.toFixed(2)} tone="warning" />
-        <MetricCard icon={Route} label="Recommended Officers" value={assigned} tone="info" />
-        <MetricCard icon={TrendingUp} label="Expected Relief" value={relief.toFixed(2)} tone="success" />
-      </div>
+          {/* 3. Decision Snapshot Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <MetricCard icon={Radar} label={`Priority Score (${priorityTier})`} value={priorityScore.toFixed(3)} tone="danger" />
+            <MetricCard icon={Activity} label="Forecasted Impact (Next 3h)" value={forecastedCii.toFixed(2)} tone="warning" />
+            <MetricCard icon={Route} label="Recommended Officers" value={assigned} tone="info" />
+            <MetricCard icon={TrendingUp} label="Expected Relief" value={relief.toFixed(2)} tone="success" />
+          </div>
 
-      {/* 4. Why this hotspot is critical */}
-      <Panel title="Why this hotspot is critical" eyebrow="Ranked Contribution">
+          {/* 4. Why this hotspot is critical */}
+          <Panel title="Why this hotspot is critical" eyebrow="Ranked Contribution">
         {(priorityTier === 'Critical' || priorityTier === 'High') ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {topDrivers.map((s) => {
@@ -296,7 +287,8 @@ export default function HotspotDetail({ detail }) {
           </button>
         </div>
       </div>
-      
+      </>
+      )}
     </div>
   );
 }
