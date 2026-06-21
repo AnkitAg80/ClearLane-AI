@@ -232,7 +232,6 @@ export default function HotspotDetail({ detail }) {
                 <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text)', fontSize: '13px', lineHeight: 1.6 }}>
                   <li>Forecast confidence: {(Number(cards.support_score || 0.8) * 100).toFixed(1)}%</li>
                   <li>Data completeness: {(Number(cards.data_quality_score || 0.95) * 100).toFixed(1)}%</li>
-                  <li>Last updated: Just now</li>
                 </ul>
               </div>
             </div>
