@@ -35,11 +35,11 @@ import Panel from './components/Panel';
 import Toolbar from './components/Toolbar';
 
 const views = [
-  { id: 'home', label: 'Home', icon: Home },
-  { id: 'command', label: 'Command', icon: Map },
-  { id: 'deployments', label: 'Deployments', icon: Route },
-  { id: 'explain', label: 'Explain', icon: Target },
-  { id: 'evidence', label: 'Evidence', icon: BrainCircuit },
+  { id: 'home', label: 'Home Dashboard', icon: Home },
+  { id: 'command', label: 'Command Center', icon: Map },
+  { id: 'deployments', label: 'Active Deployments', icon: Route },
+  { id: 'explain', label: 'AI Explanation Console', icon: Target },
+  { id: 'evidence', label: 'AI Trust Console', icon: BrainCircuit },
 ];
 
 function formatNumber(value, digits = 2) {
