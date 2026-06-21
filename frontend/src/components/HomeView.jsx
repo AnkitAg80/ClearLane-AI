@@ -41,7 +41,7 @@ export default function HomeView({ setActiveView }) {
     <div style={{ padding: '60px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
       
       <div style={{ textAlign: 'center', marginBottom: '64px', maxWidth: '600px' }}>
-        <h2 style={{ fontSize: '36px', fontWeight: 800, color: 'var(--text)', marginBottom: '16px', letterSpacing: '-0.02em' }}>Welcome to Gridlock</h2>
+        <h2 style={{ fontSize: '36px', fontWeight: 800, color: 'var(--text)', marginBottom: '16px', letterSpacing: '-0.02em' }}>Welcome to ClearLane AI</h2>
         <p style={{ fontSize: '16px', color: 'var(--muted)', lineHeight: 1.6 }}>
           Your central intelligence hub for city-wide traffic management. Select a module below to monitor live conditions or analyze AI deployment recommendations.
         </p>

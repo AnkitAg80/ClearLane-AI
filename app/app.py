@@ -32,7 +32,7 @@ from src.optimize import allocate_officers, relief_from_assignments
 from src.evaluate import deployment_roi
 
 
-app = FastAPI(title="Gridlock API")
+app = FastAPI(title="ClearLane AI API")
 
 app.add_middleware(
     CORSMiddleware,

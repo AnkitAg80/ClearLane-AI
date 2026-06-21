@@ -52,7 +52,7 @@ function LoadingScreen() {
   return (
     <div className="boot-screen">
       <RefreshCw size={26} aria-hidden="true" />
-      <strong>Loading Gridlock Command Center</strong>
+      <strong>Loading ClearLane AI Command Center</strong>
       <span>Synchronizing forecast, deployment, and evidence streams.</span>
     </div>
   );
@@ -189,7 +189,7 @@ export default function App() {
         <div className="brand-mark">
           <ShieldAlert size={24} aria-hidden="true" />
           <div>
-            <strong>Gridlock</strong>
+            <strong>ClearLane AI</strong>
             <span>Command Center</span>
           </div>
         </div>

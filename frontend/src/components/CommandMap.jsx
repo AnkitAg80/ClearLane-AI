@@ -42,7 +42,7 @@ export default function CommandMap({ rows, bbox, selectedH3, onSelect, metricMod
 
   const layers = useMemo(() => [
     new TileLayer({
-      id: 'gridlock-street-basemap',
+      id: 'clearlane-street-basemap',
       data: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
       maxZoom: 19,
       minZoom: 0,
@@ -62,7 +62,7 @@ export default function CommandMap({ rows, bbox, selectedH3, onSelect, metricMod
       },
     }),
     new H3HexagonLayer({
-      id: 'gridlock-h3-command-layer',
+      id: 'clearlane-h3-command-layer',
       data: rows,
       pickable: true,
       filled: true,

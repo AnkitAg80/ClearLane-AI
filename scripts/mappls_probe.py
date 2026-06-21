@@ -1,6 +1,6 @@
 """LIVE verification probe for the Mappls (MapmyIndia) REST API.
 
-Phase 1.5 Task 3 (Gridlock). This is an *exploratory* probe: the exact
+Phase 1.5 Task 3 (ClearLane AI). This is an *exploratory* probe: the exact
 request param names and response field shapes for the Mappls nearby and
 snap-to-road endpoints are under-documented, so we discover them against
 the live API and report what actually works.

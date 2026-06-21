@@ -219,7 +219,7 @@ def run(cfg, sample=None, with_roadctx=True, with_mappls=False, run_phase3=False
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Gridlock Phase-1 pipeline")
+    parser = argparse.ArgumentParser(description="ClearLane AI Phase-1 pipeline")
     parser.add_argument("--sample", type=int, default=None, help="limit to first N rows")
     parser.add_argument("--no-roadctx", action="store_true", help="skip OSM road context")
     parser.add_argument("--mappls", action="store_true", help="Mappls provider not available; flag ignored")
