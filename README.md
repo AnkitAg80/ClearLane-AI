@@ -105,6 +105,12 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+For local development, tests, geospatial processing, and LightGBM training, install the larger development dependency set:
+
+```powershell
+pip install -r requirements-dev.txt
+```
+
 Then install frontend dependencies:
 
 ```powershell
@@ -114,6 +120,12 @@ cd ..
 ```
 
 ## Run The Data Pipeline
+
+The pipeline requires the development dependency set:
+
+```powershell
+pip install -r requirements-dev.txt
+```
 
 To prepare artifacts without retraining the LightGBM model:
 
@@ -220,6 +232,8 @@ cd ..
 ```
 
 If the map shows `Fallback street map`, check that `MAPPLS_MAP_SDK_KEY` has Web Map SDK access enabled in the Mappls console and is allowed for the current local or deployed domain.
+
+If Vercel reports a Python bundle size error, confirm it is installing `requirements.txt`, not `requirements-dev.txt`. Heavy training packages are intentionally kept out of runtime deployment.
 
 If the app cannot load command data, confirm that `data/processed/` contains the required parquet, CSV, JSON, and model artifacts.
 

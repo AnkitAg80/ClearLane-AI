@@ -6,6 +6,7 @@ dataset/
 cache/
 .claude/
 .pytest_cache/
+.pytest_tmp*/
 .env
 scripts/_mappls_samples/
 docs/superpowers/
