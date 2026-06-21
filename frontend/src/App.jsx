@@ -143,8 +143,8 @@ export default function App() {
         setMapRows(mapPayload.rows || []);
         const nextHotspots = hotspotPayload.rows || [];
         setHotspots(nextHotspots);
-        if (!selectedH3 && nextHotspots[0]?.h3) {
-          setSelectedH3(nextHotspots[0].h3);
+        if (!selectedH3 || !nextHotspots.find(h => h.h3 === selectedH3)) {
+          setSelectedH3(nextHotspots[0]?.h3 || null);
         }
       } catch (err) {
         if (!cancelled) setError(err.message || 'Unable to load filtered command data.');
@@ -242,7 +242,7 @@ export default function App() {
           />
         )}
 
-        {activeView !== 'deployments' && (
+        {activeView !== 'deployments' && activeView !== 'explain' && (
           <section className="metrics-grid metrics-grid--compact" aria-label="Command summary">
             <BudgetCard
               deployedCount={summary.officers_deployed}
