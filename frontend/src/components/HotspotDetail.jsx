@@ -168,12 +168,12 @@ export default function HotspotDetail({ detail }) {
           <div style={{ flex: '1 1 400px' }}>
             <h4 style={{ fontSize: '14px', color: 'var(--muted)', marginBottom: '16px', fontWeight: 500 }}>Congestion Trend (Simulated)</h4>
             <div style={{ height: '180px', background: 'var(--line)', borderRadius: '8px', position: 'relative', display: 'flex', alignItems: 'flex-end', padding: '16px', gap: '8px' }}>
-              {[lag3h, lag1h, currentCii, forecastedCii * 0.9, forecastedCii].map((val, idx) => {
-                const heightPct = Math.min(100, Math.max(10, (val / 100) * 100));
+              {[currentCii, currentCii * 0.67 + forecastedCii * 0.33, currentCii * 0.33 + forecastedCii * 0.67, forecastedCii].map((val, idx) => {
+                const heightPct = Math.min(100, Math.max(2, ((val || 0) / 100) * 100));
                 return (
-                  <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: '100%', height: `${heightPct}%`, background: idx >= 3 ? 'var(--amber)' : 'var(--cyan)', opacity: idx >= 3 ? 0.7 : 1, borderRadius: '4px 4px 0 0', transition: 'all 0.3s ease' }} />
-                    <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{['T-3h', 'T-1h', 'Now', 'T+1.5h', 'T+3h'][idx]}</span>
+                  <div key={idx} style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                    <div style={{ width: '100%', height: `${heightPct}%`, background: idx >= 1 ? 'var(--amber)' : 'var(--cyan)', opacity: idx >= 1 ? 0.7 : 1, borderRadius: '4px 4px 0 0', transition: 'all 0.3s ease' }} />
+                    <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{['Now', 'T+1h', 'T+2h', 'T+3h'][idx]}</span>
                   </div>
                 );
               })}
