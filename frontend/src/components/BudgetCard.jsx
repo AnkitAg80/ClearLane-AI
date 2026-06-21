@@ -11,7 +11,7 @@ export default function BudgetCard({ deployedCount, onOptimize, isLoading }) {
   return (
     <article className="metric-card metric-card--success" title="Total available police personnel strategically allocated across all active zones.">
       <div className="metric-card__top">
-        <span>Assigned Personnel</span>
+        <span>Assigned Officers</span>
         <Crosshair size={18} aria-hidden="true" />
       </div>
       

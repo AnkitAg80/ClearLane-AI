@@ -63,9 +63,26 @@ export default function DeploymentConsole({ overview, deployment, onOptimize, is
           </h3>
           
           <div style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '13px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '13px' }}>
               <span style={{ color: 'var(--muted)' }}>Assigned Officers</span>
-              <span style={{ fontWeight: 600, color: 'var(--green)' }}>{budget}</span>
+              <input 
+                type="number" 
+                value={budget} 
+                onChange={(e) => setBudget(e.target.value === '' ? '' : Number(e.target.value))} 
+                style={{ 
+                  width: '64px', 
+                  background: 'rgba(15, 23, 42, 0.78)', 
+                  border: '1px solid var(--line)', 
+                  borderRadius: '6px',
+                  color: 'var(--green)', 
+                  padding: '4px 6px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  fontFamily: "'Fira Code', monospace"
+                }}
+                disabled={isLoading}
+              />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <button 
