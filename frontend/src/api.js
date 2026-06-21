@@ -22,6 +22,10 @@ export function getOverview() {
   return request('/api/overview');
 }
 
+export function getConfig() {
+  return request('/api/config');
+}
+
 export function getMapRows(filters) {
   return request('/api/map', filters);
 }

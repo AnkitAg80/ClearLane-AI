@@ -97,6 +97,51 @@ def artifact_rows():
     return artifact_status(processed_dir)
 
 
+def read_env_value(name):
+    value = os.environ.get(name)
+    if value:
+        return value.strip()
+    env_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+    if not os.path.exists(env_path):
+        return ""
+    try:
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                stripped = line.strip()
+                if not stripped or stripped.startswith("#") or "=" not in stripped:
+                    continue
+                key, raw_value = stripped.split("=", 1)
+                if key.strip() == name:
+                    return raw_value.strip().strip('"').strip("'")
+    except OSError:
+        return ""
+    return ""
+
+
+def mappls_frontend_config():
+    key = read_env_value("MAPPLS_MAP_SDK_KEY")
+    sdk_urls = []
+    if key:
+        sdk_urls = [
+            f"https://apis.mappls.com/advancedmaps/api/{key}/map_sdk?layer=vector&v=3.0",
+            f"https://apis.mapmyindia.com/advancedmaps/v1/{key}/map_load?v=1.5",
+        ]
+    return {
+        "provider": "mappls" if key else "carto",
+        "mappls": {
+            "enabled": bool(key),
+            "sdk_url": sdk_urls[0] if sdk_urls else "",
+            "sdk_urls": sdk_urls,
+            "attribution": "Map powered by Mappls",
+        },
+        "fallback": {
+            "provider": "carto",
+            "tile_url": "https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
+            "attribution": "© CARTO, © OpenStreetMap contributors",
+        },
+    }
+
+
 def clean_data_for_json(df):
     if df is None or df.empty:
         return []
@@ -197,6 +242,11 @@ def get_health():
         "missing_count": missing_count,
         "processed_dir": processed_dir,
     }
+
+
+@app.get("/api/config")
+def get_frontend_config():
+    return mappls_frontend_config()
 
 
 @app.get("/api/overview")

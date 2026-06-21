@@ -17,6 +17,7 @@ import {
 import {
   getDeployment,
   getEvidence,
+  getConfig,
   getHotspotDetail,
   getHotspots,
   getMapRows,
@@ -74,6 +75,7 @@ function ErrorScreen({ error, onRetry }) {
 
 export default function App() {
   const [overview, setOverview] = useState(null);
+  const [appConfig, setAppConfig] = useState(null);
   const [mapRows, setMapRows] = useState([]);
   const [hotspots, setHotspots] = useState([]);
   const [deployment, setDeployment] = useState(null);
@@ -108,6 +110,7 @@ export default function App() {
       setOverview(overviewPayload);
       setDeployment(deploymentPayload);
       setEvidence(evidencePayload);
+      getConfig().then(setAppConfig).catch(() => setAppConfig(null));
     } catch (err) {
       setError(err.message || 'Unable to load dashboard payloads.');
     } finally {
@@ -308,6 +311,7 @@ export default function App() {
                     selectedH3={selectedH3}
                     onSelect={setSelectedH3}
                     metricMode={metricMode}
+                    mapConfig={appConfig}
                   />
                 </div>
                 <HotspotDetail detail={detail} compact={true} />

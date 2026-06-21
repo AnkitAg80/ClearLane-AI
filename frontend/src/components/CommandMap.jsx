@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import DeckGL from '@deck.gl/react';
 import { BitmapLayer } from '@deck.gl/layers';
 import { H3HexagonLayer, TileLayer } from '@deck.gl/geo-layers';
@@ -13,6 +13,9 @@ const metricLabels = {
   support_score: 'Support score',
 };
 
+const DEFAULT_FALLBACK_TILE_URL = 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png';
+const mapplsScriptCache = new Map();
+
 function metricValue(row, metricMode) {
   return Number(row?.metric_values?.[metricMode] ?? row?.[metricMode] ?? 0);
 }
@@ -26,8 +29,13 @@ function colorFor(value, max, selected) {
   return [71, 85, 105, 78];
 }
 
-export default function CommandMap({ rows, bbox, selectedH3, onSelect, metricMode }) {
+export default function CommandMap({ rows, bbox, selectedH3, onSelect, metricMode, mapConfig }) {
   const [hovered, setHovered] = useState(null);
+  const [basemapStatus, setBasemapStatus] = useState('loading');
+  const mapContainerRef = useRef(null);
+  const mapplsMapRef = useRef(null);
+  const internalMapId = useId().replace(/:/g, '');
+  const mapElementId = `mappls-${internalMapId}`;
   const [viewState, setViewState] = useState(() => ({
     longitude: bbox?.east && bbox?.west ? (bbox.east + bbox.west) / 2 : 77.5946,
     latitude: bbox?.north && bbox?.south ? (bbox.north + bbox.south) / 2 : 12.9716,
@@ -40,28 +48,119 @@ export default function CommandMap({ rows, bbox, selectedH3, onSelect, metricMod
     return Math.max(1, ...rows.map((row) => metricValue(row, metricMode)));
   }, [rows, metricMode]);
 
-  const layers = useMemo(() => [
-    new TileLayer({
-      id: 'clearlane-street-basemap',
-      data: 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-      maxZoom: 19,
-      minZoom: 0,
-      tileSize: 256,
-      renderSubLayers: (props) => {
-        const { boundingBox } = props.tile;
-        return new BitmapLayer(props, {
-          data: null,
-          image: props.data,
-          bounds: [
-            boundingBox[0][0],
-            boundingBox[0][1],
-            boundingBox[1][0],
-            boundingBox[1][1],
-          ],
-        });
-      },
-    }),
-    new H3HexagonLayer({
+  const mapplsConfig = mapConfig?.mappls || {};
+  const fallbackConfig = mapConfig?.fallback || {};
+  const useMappls = Boolean(mapplsConfig.enabled && mapplsConfig.sdk_url);
+  const mapplsSdkUrls = useMemo(
+    () => (mapplsConfig.sdk_urls?.length ? mapplsConfig.sdk_urls : [mapplsConfig.sdk_url].filter(Boolean)),
+    [mapplsConfig.sdk_url, mapplsConfig.sdk_urls]
+  );
+  const mapplsReady = basemapStatus === 'mappls-ready';
+  const fallbackTileUrl = fallbackConfig.tile_url || DEFAULT_FALLBACK_TILE_URL;
+
+  useEffect(() => {
+    if (!useMappls) {
+      setBasemapStatus('fallback');
+      return undefined;
+    }
+
+    let cancelled = false;
+    setBasemapStatus('mappls-loading');
+
+    const loadScript = (sdkUrl) => {
+      if (!mapplsScriptCache.has(sdkUrl)) {
+        mapplsScriptCache.set(sdkUrl, new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = sdkUrl;
+          script.async = true;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.head.appendChild(script);
+        }));
+      }
+      return mapplsScriptCache.get(sdkUrl);
+    };
+
+    const initializeFromSdkUrls = async () => {
+      for (const sdkUrl of mapplsSdkUrls) {
+        try {
+          await loadScript(sdkUrl);
+        } catch {
+          continue;
+        }
+        if (cancelled || !mapContainerRef.current) return true;
+        const MapCtor = globalThis.mappls?.Map || globalThis.MapmyIndia?.Map;
+        if (!MapCtor) continue;
+        if (!mapplsMapRef.current) {
+          mapplsMapRef.current = new MapCtor(mapElementId, {
+            center: [viewState.latitude, viewState.longitude],
+            zoom: viewState.zoom,
+            zoomControl: false,
+            hybrid: false,
+          });
+        }
+        setBasemapStatus('mappls-ready');
+        return true;
+      }
+      return false;
+    };
+
+    initializeFromSdkUrls()
+      .then((initialized) => {
+        if (!cancelled && !initialized) {
+          setBasemapStatus('fallback');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setBasemapStatus('fallback');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mapElementId, mapplsConfig.sdk_url, mapplsSdkUrls, useMappls, viewState.latitude, viewState.longitude, viewState.zoom]);
+
+  useEffect(() => {
+    if (!mapplsReady || !mapplsMapRef.current) return;
+    const map = mapplsMapRef.current;
+    const center = [viewState.latitude, viewState.longitude];
+    try {
+      if (typeof map.setView === 'function') {
+        map.setView(center, viewState.zoom, { animate: false });
+      } else {
+        if (typeof map.setCenter === 'function') map.setCenter(center);
+        if (typeof map.setZoom === 'function') map.setZoom(viewState.zoom);
+      }
+    } catch {
+      setBasemapStatus('fallback');
+    }
+  }, [mapplsReady, viewState.latitude, viewState.longitude, viewState.zoom]);
+
+  const layers = useMemo(() => {
+    const outputLayers = [];
+    if (!mapplsReady) {
+      outputLayers.push(new TileLayer({
+        id: 'clearlane-street-basemap',
+        data: fallbackTileUrl,
+        maxZoom: 19,
+        minZoom: 0,
+        tileSize: 256,
+        renderSubLayers: (props) => {
+          const { boundingBox } = props.tile;
+          return new BitmapLayer(props, {
+            data: null,
+            image: props.data,
+            bounds: [
+              boundingBox[0][0],
+              boundingBox[0][1],
+              boundingBox[1][0],
+              boundingBox[1][1],
+            ],
+          });
+        },
+      }));
+    }
+    outputLayers.push(new H3HexagonLayer({
       id: 'clearlane-h3-command-layer',
       data: rows,
       pickable: true,
@@ -80,21 +179,37 @@ export default function CommandMap({ rows, bbox, selectedH3, onSelect, metricMod
       transitions: {
         getFillColor: 220,
       },
-    }),
-  ], [rows, selectedH3, metricMode, maxMetric, onSelect]);
+    }));
+    return outputLayers;
+  }, [rows, selectedH3, metricMode, maxMetric, onSelect, mapplsReady, fallbackTileUrl]);
 
   return (
     <div className="map-stage">
+      {useMappls && (
+        <div
+          id={mapElementId}
+          ref={mapContainerRef}
+          className="mappls-basemap"
+          aria-hidden="true"
+        />
+      )}
       <DeckGL
         viewState={viewState}
         onViewStateChange={({ viewState: next }) => setViewState(next)}
         controller
         layers={layers}
+        glOptions={{ alpha: true, premultipliedAlpha: false }}
+        parameters={{ clearColor: [0, 0, 0, 0] }}
+        style={{ background: 'transparent' }}
       />
 
       <div className="map-badge">
         <LocateFixed size={16} aria-hidden="true" />
         <span>{metricLabels[metricMode] || 'Metric'}</span>
+      </div>
+
+      <div className={mapplsReady ? 'map-provider-badge' : 'map-provider-badge is-fallback'}>
+        {mapplsReady ? (mapplsConfig.attribution || 'Map powered by Mappls') : 'Fallback street map'}
       </div>
 
       <div className="map-hint">

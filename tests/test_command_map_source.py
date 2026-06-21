@@ -13,6 +13,18 @@ def test_command_map_uses_street_readable_basemap():
     assert "react-map-gl" not in source
 
 
+def test_command_map_attempts_mappls_before_fallback_basemap():
+    source = COMMAND_MAP.read_text(encoding="utf-8")
+
+    assert "mapplsConfig.sdk_url" in source
+    assert "Map powered by Mappls" in source
+    assert "Fallback street map" in source
+    assert "globalThis.mappls?.Map" in source
+    assert "sdk_urls" in source
+    assert "clearColor: [0, 0, 0, 0]" in source
+    assert "background: 'transparent'" in source
+
+
 def test_command_map_renders_hotspots_as_flat_translucent_overlay():
     source = COMMAND_MAP.read_text(encoding="utf-8")
 

@@ -490,6 +490,30 @@ button {
   background: #020617;
 }
 
+.mappls-basemap {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.mappls-basemap > *,
+.mappls-basemap canvas,
+.mappls-basemap .mapboxgl-map,
+.mappls-basemap .leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.map-stage .deckgl-wrapper,
+.map-stage .deckgl-overlay {
+  background: transparent !important;
+}
+
+.map-stage canvas {
+  position: relative;
+  z-index: 1;
+}
+
 .map-badge,
 .map-hint,
 .map-tooltip {
@@ -515,6 +539,24 @@ button {
 
 .map-badge {
   top: 14px;
+}
+
+.map-provider-badge {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  z-index: 3;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.76);
+  color: #e2e8f0;
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.map-provider-badge.is-fallback {
+  background: rgba(71, 85, 105, 0.78);
 }
 
 .map-hint {
