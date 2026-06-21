@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd frontend && npm ci && npm run build",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/app/app.py"
+    }
+  ]
+}

@@ -56,6 +56,7 @@ tests/
 config.yaml                 Main pipeline and model configuration.
 .env.example                Environment variable template.
 requirements.txt            Python dependencies.
+vercel.json                 Vercel build command and routing for the FastAPI-served React app.
 ```
 
 ## Required Artifacts
@@ -234,6 +235,8 @@ cd ..
 If the map shows `Fallback street map`, check that `MAPPLS_MAP_SDK_KEY` has Web Map SDK access enabled in the Mappls console and is allowed for the current local or deployed domain.
 
 If Vercel reports a Python bundle size error, confirm it is installing `requirements.txt`, not `requirements-dev.txt`. Heavy training packages are intentionally kept out of runtime deployment.
+
+If the deployed Vercel page says `Frontend build not found`, confirm `vercel.json` is present in the committed branch. It runs `npm ci && npm run build` inside `frontend/` before routing requests to the FastAPI app.
 
 If the app cannot load command data, confirm that `data/processed/` contains the required parquet, CSV, JSON, and model artifacts.
 
