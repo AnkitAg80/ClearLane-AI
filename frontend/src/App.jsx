@@ -24,7 +24,7 @@ import {
 } from './api';
 import BudgetCard from './components/BudgetCard';
 import CommandMap from './components/CommandMap';
-import DeploymentView from './components/DeploymentView';
+import DeploymentsView from './components/DeploymentsView';
 import EvidenceView from './components/EvidenceView';
 import HotspotDetail from './components/HotspotDetail';
 import HotspotTable from './components/HotspotTable';
@@ -34,9 +34,8 @@ import Toolbar from './components/Toolbar';
 
 const views = [
   { id: 'command', label: 'Command', icon: Map },
-  { id: 'hotspots', label: 'Hotspots', icon: Table2 },
+  { id: 'deployments', label: 'Deployments', icon: Route },
   { id: 'explain', label: 'Explain', icon: Target },
-  { id: 'deployment', label: 'Deploy', icon: Route },
   { id: 'evidence', label: 'Evidence', icon: BrainCircuit },
 ];
 
@@ -277,17 +276,11 @@ export default function App() {
               </div>
             )}
 
-            {activeView === 'hotspots' && (
-              <Panel title="Ranked Hotspots" eyebrow={`${hotspots.length} matches`}>
-                <HotspotTable rows={hotspots} selectedH3={selectedH3} onSelect={setSelectedH3} />
-              </Panel>
+            {activeView === 'deployments' && (
+              <DeploymentsView deployment={deployment} hotspots={hotspots} selectedH3={selectedH3} onSelect={setSelectedH3} />
             )}
 
             {activeView === 'explain' && <HotspotDetail detail={detail} />}
-
-            {activeView === 'deployment' && (
-              <DeploymentView deployment={deployment} selectedH3={selectedH3} onSelect={setSelectedH3} />
-            )}
 
             {activeView === 'evidence' && <EvidenceView evidence={evidence} />}
           </motion.section>
