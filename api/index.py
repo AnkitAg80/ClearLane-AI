@@ -414,4 +414,4 @@ else:
         return HTMLResponse("<h1>Frontend build not found. Run 'npm run build' inside frontend/.</h1>")
 
 if __name__ == "__main__":
-    uvicorn.run("app.app:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("api.index:app", host="127.0.0.1", port=8000, reload=True)
