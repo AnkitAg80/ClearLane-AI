@@ -72,11 +72,22 @@ export function LocationSearchBox({ suggestions }: LocationSearchBoxProps) {
 
   const handleSubmit = React.useCallback((event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSelectedH3(null);
-    select(null);
-    const href = buildCanvasHref(query, null, searchParams);
-    if (location.pathname !== '/canvas' || location.search !== href.replace('/canvas', '')) {
-      navigate(href);
+    const isH3 = query.trim().match(/^[a-fA-F0-9]{15}$/);
+    if (isH3) {
+      const cellId = query.trim().toLowerCase();
+      setSelectedH3(cellId);
+      select(cellId);
+      const href = buildCanvasHref('', cellId, searchParams);
+      if (location.pathname !== '/canvas' || location.search !== href.replace('/canvas', '')) {
+        navigate(href);
+      }
+    } else {
+      setSelectedH3(null);
+      select(null);
+      const href = buildCanvasHref(query, null, searchParams);
+      if (location.pathname !== '/canvas' || location.search !== href.replace('/canvas', '')) {
+        navigate(href);
+      }
     }
     setOpen(false);
   }, [location.pathname, location.search, navigate, query, searchParams, select, setSelectedH3]);
@@ -112,11 +123,11 @@ export function LocationSearchBox({ suggestions }: LocationSearchBoxProps) {
   return (
     <div ref={rootRef} className="relative z-[70] w-full min-w-0">
       <form onSubmit={handleSubmit} className="flex items-center gap-2">
-        <div className="relative min-w-0 flex-1">
+        <div className="relative min-w-[200px] flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-tertiary" />
           <input
-            type="search"
-            placeholder="Search dataset locations..."
+            type="text"
+            placeholder="Search locations or enter cell..."
             value={query}
             onFocus={() => setOpen(true)}
             onChange={(event) => {
