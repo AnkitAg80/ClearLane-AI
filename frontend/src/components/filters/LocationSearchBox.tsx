@@ -116,7 +116,7 @@ export function LocationSearchBox({ suggestions }: LocationSearchBoxProps) {
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-tertiary" />
           <input
             type="search"
-            placeholder="Search dataset locations..."
+            placeholder="Search locations..."
             value={query}
             onFocus={() => setOpen(true)}
             onChange={(event) => {

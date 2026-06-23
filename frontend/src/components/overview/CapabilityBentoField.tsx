@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, Crosshair, LineChart, Map, ShieldCheck, Target, Zap } from 'lucide-react';
 import { cn } from '../../lib/utils/cn';
+import { MapCanvas } from '../map/MapCanvas';
 
 const CAPABILITIES = [
   { id: 'canvas', area: 'canvas', route: '/canvas', icon: Map, title: 'Canvas', copy: 'Full-bleed spatial command stage for hotspot selection and layer control.', tone: 'text-sig-cold', surface: 'bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.22),transparent_34%)]' },
@@ -50,6 +51,61 @@ export function CapabilityBentoField() {
               )}
             >
               <div className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100 [background-image:linear-gradient(rgba(255,255,255,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:32px_32px]" />
+
+              {capability.id === 'canvas' && (
+                <div className="absolute inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none transition-opacity group-hover:opacity-60">
+                  <MapCanvas interactive={false} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-bg-canvas via-bg-canvas/50 to-transparent" />
+                </div>
+              )}
+
+              {capability.id === 'missions' && (
+                <div className="absolute inset-0 z-0 flex items-end gap-3 overflow-hidden px-5 pb-0 pt-20 pointer-events-none opacity-40 transition-opacity group-hover:opacity-70">
+                  <div className="flex w-1/3 flex-col gap-2.5 rounded-t-xl border border-white/20 bg-white/10 p-3 pt-5 shadow-lg">
+                    <div className="h-10 w-full rounded-md bg-sig-calm/60" />
+                    <div className="h-12 w-full rounded-md bg-sig-calm/40" />
+                  </div>
+                  <div className="flex w-1/3 flex-col gap-2.5 rounded-t-xl border border-white/20 bg-white/10 p-3 pt-5 shadow-lg">
+                    <div className="h-14 w-full rounded-md bg-sig-warn/60" />
+                    <div className="h-8 w-full rounded-md bg-sig-warn/40" />
+                  </div>
+                  <div className="flex w-1/3 flex-col gap-2.5 rounded-t-xl border border-white/20 bg-white/10 p-3 pt-5 shadow-lg">
+                    <div className="h-8 w-full rounded-md bg-accent/60" />
+                    <div className="h-16 w-full rounded-md bg-accent/40" />
+                    <div className="h-10 w-full rounded-md bg-accent/20" />
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-bg-canvas via-bg-canvas/30 to-transparent" />
+                </div>
+              )}
+
+              {capability.id === 'deployment' && (
+                <div className="absolute inset-0 z-0 flex flex-col gap-4 overflow-hidden px-5 pb-0 pt-16 pointer-events-none opacity-40 transition-opacity group-hover:opacity-70">
+                  <div className="flex justify-between gap-3">
+                    <div className="h-12 flex-1 rounded-xl border border-white/20 bg-sig-cold/30 shadow-sm" />
+                    <div className="h-12 flex-1 rounded-xl border border-white/20 bg-fg-tertiary/30 shadow-sm" />
+                    <div className="h-12 flex-1 rounded-xl border border-white/20 bg-sig-calm/30 shadow-sm" />
+                    <div className="h-12 flex-1 rounded-xl border border-white/20 bg-sig-warn/30 shadow-sm" />
+                  </div>
+                  <div className="flex flex-1 gap-4">
+                    <div className="flex-1 rounded-t-xl border border-white/20 bg-white/10 p-3 shadow-md">
+                      <div className="h-2.5 w-1/3 rounded-full bg-white/40 mb-3" />
+                      <div className="space-y-2">
+                        <div className="h-4 w-full rounded bg-white/20" />
+                        <div className="h-4 w-full rounded bg-white/20" />
+                        <div className="h-4 w-full rounded bg-white/20" />
+                      </div>
+                    </div>
+                    <div className="flex-1 rounded-t-xl border border-white/20 bg-white/10 p-3 shadow-md">
+                      <div className="h-2.5 w-1/3 rounded-full bg-white/40 mb-3" />
+                      <div className="space-y-2">
+                        <div className="h-4 w-full rounded bg-white/10" />
+                        <div className="h-4 w-full rounded bg-white/10" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-bg-canvas via-bg-canvas/30 to-transparent" />
+                </div>
+              )}
               <div className="relative z-10 flex h-full flex-col justify-between">
                 <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl border border-border-default bg-bg-canvas/70', capability.tone)}>
                   <Icon className="h-5 w-5" />

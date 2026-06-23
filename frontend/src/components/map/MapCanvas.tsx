@@ -25,7 +25,7 @@ function existingLayers(map: maplibregl.Map, layerIds: string[]) {
   return layerIds.filter((layerId) => map.getLayer(layerId));
 }
 
-export function MapCanvas() {
+export function MapCanvas({ interactive = true }: { interactive?: boolean }) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const { viewport, setViewport, layers, selectedH3Pulse, setSelectedH3Pulse } = useCanvasStore();
@@ -56,6 +56,7 @@ export function MapCanvas() {
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
+      interactive,
       style: {
         version: 8,
         glyphs: 'https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf',
@@ -87,56 +88,60 @@ export function MapCanvas() {
       attributionControl: false
     });
 
-    map.current.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
+    if (interactive) {
+      map.current.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
 
-    map.current.on('move', () => {
-      if (!map.current) return;
-      const center = map.current.getCenter();
-      setViewport({
-        longitude: center.lng,
-        latitude: center.lat,
-        zoom: map.current.getZoom(),
-        pitch: map.current.getPitch(),
-        bearing: map.current.getBearing()
+      map.current.on('move', () => {
+        if (!map.current) return;
+        const center = map.current.getCenter();
+        setViewport({
+          longitude: center.lng,
+          latitude: center.lat,
+          zoom: map.current.getZoom(),
+          pitch: map.current.getPitch(),
+          bearing: map.current.getBearing()
+        });
+        emitMapplsView(map.current);
       });
-      emitMapplsView(map.current);
-    });
+    }
 
     map.current.once('load', () => {
       if (map.current) emitMapplsView(map.current);
     });
 
-    map.current.on('mousemove', (e) => {
-      if (!map.current) return;
-      const queryLayers = existingLayers(map.current, INTERACTIVE_LAYERS);
-      const features = queryLayers.length > 0
-        ? map.current.queryRenderedFeatures(e.point, { layers: queryLayers })
-        : [];
-      if (features.length > 0) {
-        map.current.getCanvas().style.cursor = 'pointer';
-        const h3Id = features[0].properties?.h3 || features[0].id;
-        hover(h3Id as string);
-        return;
-      }
-      map.current.getCanvas().style.cursor = '';
-      hover(null);
-    });
+    if (interactive) {
+      map.current.on('mousemove', (e) => {
+        if (!map.current) return;
+        const queryLayers = existingLayers(map.current, INTERACTIVE_LAYERS);
+        const features = queryLayers.length > 0
+          ? map.current.queryRenderedFeatures(e.point, { layers: queryLayers })
+          : [];
+        if (features.length > 0) {
+          map.current.getCanvas().style.cursor = 'pointer';
+          const h3Id = features[0].properties?.h3 || features[0].id;
+          hover(h3Id as string);
+          return;
+        }
+        map.current.getCanvas().style.cursor = '';
+        hover(null);
+      });
 
-    map.current.on('click', (e) => {
-      if (!map.current) return;
-      const queryLayers = existingLayers(map.current, INTERACTIVE_LAYERS);
-      const features = queryLayers.length > 0
-        ? map.current.queryRenderedFeatures(e.point, { layers: queryLayers })
-        : [];
-      if (features.length > 0) {
-        const h3Id = features[0].properties?.h3 || features[0].id;
-        select(h3Id as string);
-        setSelectedH3Pulse(true);
-      } else {
-        select(null);
-        setSelectedH3Pulse(false);
-      }
-    });
+      map.current.on('click', (e) => {
+        if (!map.current) return;
+        const queryLayers = existingLayers(map.current, INTERACTIVE_LAYERS);
+        const features = queryLayers.length > 0
+          ? map.current.queryRenderedFeatures(e.point, { layers: queryLayers })
+          : [];
+        if (features.length > 0) {
+          const h3Id = features[0].properties?.h3 || features[0].id;
+          select(h3Id as string);
+          setSelectedH3Pulse(true);
+        } else {
+          select(null);
+          setSelectedH3Pulse(false);
+        }
+      });
+    }
 
     return () => {
       stopPulse.current?.();
