@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://YOUR_PRODUCTION_BACKEND_URL.com/api/$1"
+      "destination": "https://http://127.0.0.1:8000.com/api/$1"
     },
     {
       "source": "/(.*)",
