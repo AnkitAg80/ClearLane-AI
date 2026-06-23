@@ -2,7 +2,7 @@
   "buildCommand": "cd frontend && npm ci && npm run build",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "api/**/*.py": {
+    "api/index.py": {
       "includeFiles": "{src,data,app,config.yaml}/**"
     }
   },
