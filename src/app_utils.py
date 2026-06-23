@@ -1,6 +1,5 @@
 import pandas as pd
 import os
-import pydeck as pdk
 
 def load_data_safe(path):
     """Load parquet file safely, return None if missing."""
@@ -105,6 +104,8 @@ def summarize_deployment(plan_df, roi_metrics=None, backtest_metrics=None):
 
 def get_h3_layer(df, color_column):
     """Generate a Pydeck H3 layer."""
+    import pydeck as pdk
+
     layer_df = df.copy()
     if color_column not in layer_df.columns:
         layer_df[color_column] = 0.0

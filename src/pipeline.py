@@ -37,6 +37,30 @@ def _limit_training_rows(train_df, target_col, cfg):
     return balanced.sort_values(["timestamp", "h3"]).reset_index(drop=True)
 
 
+def _apply_road_lanes_to_panel(panel, road_df):
+    """Fill panel lane values from road context without a full panel-sized merge."""
+    if panel.empty or road_df is None or road_df.empty or "h3" not in road_df.columns or "lanes" not in road_df.columns:
+        out = panel.copy()
+        if "lanes" in out.columns:
+            out["lanes"] = out["lanes"].fillna(1).clip(lower=1)
+        return out
+
+    out = panel.copy()
+    road_lanes = (
+        road_df[["h3", "lanes"]]
+        .dropna(subset=["h3"])
+        .drop_duplicates("h3")
+        .set_index("h3")["lanes"]
+    )
+    mapped_lanes = pd.to_numeric(out["h3"].map(road_lanes), errors="coerce")
+    if "lanes" in out.columns:
+        existing_lanes = pd.to_numeric(out["lanes"], errors="coerce")
+        out["lanes"] = existing_lanes.fillna(mapped_lanes).fillna(1).clip(lower=1)
+    else:
+        out["lanes"] = mapped_lanes.fillna(1).clip(lower=1)
+    return out
+
+
 def run(cfg, sample=None, with_roadctx=True, with_mappls=False, run_phase3=False, train_model=None):
     """Run the Phase-1 pipeline; write parquet artifacts; return key tables."""
     if train_model is None:
@@ -87,10 +111,7 @@ def run(cfg, sample=None, with_roadctx=True, with_mappls=False, run_phase3=False
         panel = build_hourly_panel(weighted_df, area, cfg)
         panel = add_temporal_features(panel, cfg)
         panel = add_spatial_ring_features(panel, cfg)
-        panel = panel.merge(road_df[["h3", "lanes"]], on="h3", how="left", suffixes=("", "_road"))
-        if "lanes_road" in panel.columns:
-            panel["lanes"] = panel["lanes"].fillna(panel["lanes_road"]).fillna(1).clip(lower=1)
-            panel = panel.drop(columns=["lanes_road"])
+        panel = _apply_road_lanes_to_panel(panel, road_df)
         panel.to_parquet(os.path.join(out, "forecast_training_panel.parquet"))
 
         if not train_model:
