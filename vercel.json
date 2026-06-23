@@ -2,14 +2,14 @@
   "buildCommand": "cd frontend && npm ci && npm run build",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "app/app.py": {
-      "includeFiles": "{src,data,config.yaml}/**"
+    "api/**/*.py": {
+      "includeFiles": "{src,data,app,config.yaml}/**"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/app/app.py"
+      "destination": "/api/index.py"
     },
     {
       "source": "/(.*)",
