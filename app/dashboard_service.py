@@ -350,7 +350,7 @@ def _attach_remaining_cii(map_df):
     return out
 
 
-def build_map_rows(artifacts, station=None, min_support=0.0, query=None, h3=None, limit=300):
+def build_map_rows(artifacts, station=None, min_support=0.0, query=None, h3=None, limit=1000):
     cii_df = artifacts.get("cii")
     deployment = _deployment_df(artifacts)
     if cii_df is None:

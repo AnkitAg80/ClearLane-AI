@@ -295,7 +295,7 @@ def get_map_data(
     min_support: float = Query(default=0.0, ge=0.0, le=1.0),
     query: str | None = Query(default=None),
     h3: str | None = Query(default=None),
-    limit: int = Query(default=300, ge=1, le=1000),
+    limit: int = Query(default=1000, ge=1, le=5000),
 ):
     return {
         "rows": build_map_rows(
@@ -390,13 +390,27 @@ def get_missions(
     return build_mission_payload(loaded_artifacts(), station=station, query=query, h3=h3, limit=limit)
 
 
+from fastapi.responses import HTMLResponse, FileResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
 # Mount the react build if it exists
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
 if os.path.exists(frontend_dist):
-    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend")
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
 else:
-    @app.get("/")
-    def no_frontend():
+    @app.get("/{full_path:path}")
+    def no_frontend(full_path: str):
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API route not found")
         return HTMLResponse("<h1>Frontend build not found. Run 'npm run build' inside frontend/.</h1>")
 
 if __name__ == "__main__":

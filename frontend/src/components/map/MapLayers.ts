@@ -7,7 +7,8 @@ export function rowsToGeoJSON(rows: MapRow[]) {
     type: 'FeatureCollection' as const,
     features: rows.flatMap(row => {
       try {
-        const boundary = cellToBoundary(row.h3, true);
+        const rawBoundary = cellToBoundary(row.h3, true);
+        const boundary = [...rawBoundary, rawBoundary[0]];
         return [{
           type: 'Feature' as const,
           id: row.h3,
@@ -55,7 +56,8 @@ export function rowsToPointGeoJSON(rows: MapRow[]) {
 export function selectedToGeoJSON(h3: string | null) {
   if (!h3) return { type: 'FeatureCollection' as const, features: [] };
   try {
-    const boundary = cellToBoundary(h3, true);
+    const rawBoundary = cellToBoundary(h3, true);
+    const boundary = [...rawBoundary, rawBoundary[0]];
     return {
       type: 'FeatureCollection' as const,
       features: [{
