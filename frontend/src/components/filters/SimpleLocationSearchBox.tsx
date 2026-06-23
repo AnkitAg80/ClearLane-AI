@@ -83,9 +83,9 @@ export function SimpleLocationSearchBox() {
         <button
           type="submit"
           title="Search"
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-accent/70 bg-accent px-3 text-xs font-semibold text-white shadow-glass transition-colors hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md border border-accent/70 bg-accent px-2.5 sm:px-3 text-xs font-semibold text-white shadow-glass transition-colors hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
         >
-          <span>Search</span>
+          <span className="hidden sm:inline">Search</span>
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
       </form>

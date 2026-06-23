@@ -5,7 +5,6 @@ import { useFilterStore } from '../../stores/useFilterStore';
 import { useSelectionStore } from '../../stores/useSelectionStore';
 import { useOverview } from '../../lib/api/hooks';
 import { Button } from '../ui/Button';
-import { SimpleLocationSearchBox } from './SimpleLocationSearchBox';
 
 export function FilterBar() {
   const {
@@ -61,13 +60,9 @@ export function FilterBar() {
   };
 
   return (
-    <div className="flex w-full items-center gap-3 overflow-x-auto scrollbar-none pr-2">
-      <div className="min-w-[12rem] flex-1 border-r border-border-default pr-3">
-        <SimpleLocationSearchBox />
-      </div>
-
-      <div className="flex items-center gap-2 border-r border-border-default pr-3">
-        <span className="text-xs text-fg-secondary font-medium">Station:</span>
+    <div className="flex h-full w-full items-center justify-end gap-4 px-2">
+      <div className="flex shrink-0 items-center gap-2 border-l border-border-default pl-4">
+        <span className="text-xs font-medium text-fg-secondary">Station:</span>
         <select
           value={station || ''}
           onChange={(e) => handleStationChange(e.target.value || null)}
@@ -81,7 +76,7 @@ export function FilterBar() {
         </select>
       </div>
 
-      <div className="flex items-center gap-2 border-r border-border-default pr-3">
+      <div className="flex shrink-0 items-center gap-2 border-l border-border-default pl-4">
         <span className="whitespace-nowrap text-xs font-medium text-fg-secondary">Min Support:</span>
         <input
           type="range"
@@ -92,12 +87,14 @@ export function FilterBar() {
           aria-label="Minimum support"
           className="w-24 accent-accent"
         />
-        <span className="text-xs font-tabular text-fg-primary w-6 text-right">{minSupport}%</span>
+        <span className="w-8 text-right text-xs font-tabular text-fg-primary">{minSupport}%</span>
       </div>
 
-      <Button variant="ghost" size="icon" onClick={clearFilters} title="Clear Filters" className="ml-auto shrink-0 text-fg-tertiary hover:text-fg-primary">
-        <FilterX className="h-4 w-4" />
-      </Button>
+      <div className="flex shrink-0 items-center border-l border-border-default pl-2">
+        <Button variant="ghost" size="icon" onClick={clearFilters} title="Clear Filters" className="shrink-0 text-fg-tertiary hover:text-fg-primary">
+          <FilterX className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }
