@@ -5,7 +5,7 @@ import { useFilterStore } from '../../stores/useFilterStore';
 import { useSelectionStore } from '../../stores/useSelectionStore';
 import { useOverview } from '../../lib/api/hooks';
 import { Button } from '../ui/Button';
-import { LocationSearchBox } from './LocationSearchBox';
+import { SimpleLocationSearchBox } from './SimpleLocationSearchBox';
 
 export function FilterBar() {
   const {
@@ -63,13 +63,13 @@ export function FilterBar() {
   return (
     <div className="flex w-full items-center gap-3 overflow-x-auto scrollbar-none pr-2">
       <div className="min-w-[12rem] flex-1 border-r border-border-default pr-3">
-        <LocationSearchBox suggestions={suggestions} />
+        <SimpleLocationSearchBox />
       </div>
 
       <div className="flex items-center gap-2 border-r border-border-default pr-3">
         <span className="text-xs text-fg-secondary font-medium">Station:</span>
-        <select 
-          value={station || ''} 
+        <select
+          value={station || ''}
           onChange={(e) => handleStationChange(e.target.value || null)}
           aria-label="Police station"
           className="bg-bg-canvas text-sm border border-border-strong rounded px-2 py-1 outline-none focus:ring-1 focus:ring-accent"
@@ -83,11 +83,11 @@ export function FilterBar() {
 
       <div className="flex items-center gap-2 border-r border-border-default pr-3">
         <span className="whitespace-nowrap text-xs font-medium text-fg-secondary">Min Support:</span>
-        <input 
-          type="range" 
-          min="0" 
-          max="100" 
-          value={minSupport} 
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={minSupport}
           onChange={(e) => handleSupportChange(Number(e.target.value))}
           aria-label="Minimum support"
           className="w-24 accent-accent"
