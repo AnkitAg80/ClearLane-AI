@@ -3,12 +3,7 @@
   "outputDirectory": "frontend/dist",
   "functions": {
     "api/**/*.py": {
-      "includeFiles": [
-        "src/**",
-        "data/**",
-        "app/**",
-        "config.yaml"
-      ]
+      "includeFiles": "{src/**,data/**,app/**,config.yaml}"
     }
   },
   "rewrites": [
