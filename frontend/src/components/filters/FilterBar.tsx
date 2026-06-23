@@ -6,6 +6,7 @@ import { useSelectionStore } from '../../stores/useSelectionStore';
 import { useOverview } from '../../lib/api/hooks';
 import { Button } from '../ui/Button';
 import { LocationSearchBox } from './LocationSearchBox';
+
 export function FilterBar() {
   const {
     station,
@@ -61,7 +62,7 @@ export function FilterBar() {
 
   return (
     <div className="flex w-full items-center gap-3 overflow-x-auto scrollbar-none pr-2">
-      <div className="w-64 shrink-0 border-r border-border-default pr-3">
+      <div className="min-w-[12rem] flex-1 border-r border-border-default pr-3">
         <LocationSearchBox suggestions={suggestions} />
       </div>
 
