@@ -114,7 +114,8 @@ export function MapCanvas() {
         : [];
       if (features.length > 0) {
         map.current.getCanvas().style.cursor = 'pointer';
-        hover(features[0].id as string);
+        const h3Id = features[0].properties?.h3 || features[0].id;
+        hover(h3Id as string);
         return;
       }
       map.current.getCanvas().style.cursor = '';
@@ -128,7 +129,8 @@ export function MapCanvas() {
         ? map.current.queryRenderedFeatures(e.point, { layers: queryLayers })
         : [];
       if (features.length > 0) {
-        select(features[0].id as string);
+        const h3Id = features[0].properties?.h3 || features[0].id;
+        select(h3Id as string);
         setSelectedH3Pulse(true);
       } else {
         select(null);
