@@ -90,6 +90,8 @@ def test_config_has_next3h_forecast_contract():
         "cell_total_rank_pct",
         "ring1_active_neighbor_count",
         "ring2_active_neighbor_count",
+        "capacity_stolen_pct",
+        "time_to_criticality_mins",
     ]
 
     assert forecast["train_end_date"] == "2024-03-31"

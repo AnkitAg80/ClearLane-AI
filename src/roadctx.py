@@ -8,10 +8,8 @@ def get_graph(bbox, network_type, cache_path):
     """Return the drive graph for the bbox, fetching once then reading the cache."""
     if os.path.exists(cache_path):
         return ox.load_graphml(cache_path)
-    G = ox.graph_from_bbox(
-        bbox["north"], bbox["south"], bbox["east"], bbox["west"],
-        network_type=network_type,
-    )
+    osmnx_bbox = (bbox["west"], bbox["south"], bbox["east"], bbox["north"])
+    G = ox.graph_from_bbox(osmnx_bbox, network_type=network_type)
     os.makedirs(os.path.dirname(cache_path), exist_ok=True)
     ox.save_graphml(G, cache_path)
     return G
@@ -32,10 +30,22 @@ def _lanes(value, road_class, defaults):
 
 def cell_road_context(cells, G, lane_defaults):
     """Map each H3 cell centroid to its nearest road edge's class and lane count."""
+    cells = list(cells)
+    if not cells:
+        return pd.DataFrame(columns=["h3", "road_class", "lanes"])
+
+    coords = [h3.cell_to_latlng(cell) for cell in cells]
+    ys = [lat for lat, _ in coords]
+    xs = [lng for _, lng in coords]
+    nearest = ox.distance.nearest_edges(G, xs, ys)
+    if isinstance(nearest, tuple) and len(nearest) == 3:
+        nearest_edges = [nearest]
+    else:
+        nearest_edges = list(nearest)
+
     rows = []
-    for cell in cells:
-        lat, lng = h3.cell_to_latlng(cell)
-        u, v, k = ox.distance.nearest_edges(G, lng, lat)
+    for cell, edge in zip(cells, nearest_edges):
+        u, v, k = edge
         data = G.edges[u, v, k]
         road_class = _first(data.get("highway", "_default"))
         rows.append({

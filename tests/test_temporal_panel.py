@@ -94,6 +94,7 @@ def test_build_hourly_panel_empty_or_invalid_input_returns_expected_schema():
         "station_count_log", "no_junction_count", "junction_count_log", "cell_total_rank_pct",
         "violation_total",
         "hour", "dow", "month", "is_weekend",
+        "capacity_stolen_pct", "time_to_criticality_mins", "lifecycle_stage",
         "top_location",
     ]
     assert panel.empty

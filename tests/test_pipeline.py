@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from src.pipeline import run
+from src.pipeline import run, _apply_road_lanes_to_panel
 
 
 def test_pipeline_writes_artifacts(tmp_path, sample_csv):
@@ -35,6 +35,24 @@ def test_pipeline_writes_artifacts(tmp_path, sample_csv):
     assert "support_score" in area.columns
     assert area["support_score"].between(0.0, 1.0).all()
     assert area["unique_location_count"].max() >= 1
+
+
+def test_apply_road_lanes_to_panel_maps_without_merge_suffix_columns():
+    panel = pd.DataFrame({
+        "h3": ["cell_a", "cell_b", "cell_c"],
+        "lanes": [pd.NA, 2, pd.NA],
+        "current_cii": [1.0, 2.0, 3.0],
+    })
+    road_df = pd.DataFrame({
+        "h3": ["cell_a", "cell_c", "cell_c"],
+        "lanes": [3, 4, 5],
+    })
+
+    out = _apply_road_lanes_to_panel(panel, road_df)
+
+    assert len(out) == len(panel)
+    assert "lanes_road" not in out.columns
+    assert out["lanes"].tolist() == [3, 2, 4]
 
 
 def test_pipeline_ignores_mappls_flag_for_active_artifacts(tmp_path, sample_csv, monkeypatch):

@@ -14,6 +14,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src import config
 from src.app_utils import (
     artifact_status,
+    load_csv_safe,
     load_stage4_artifacts,
     prepare_map_dataframe,
     summarize_deployment,
@@ -25,8 +26,11 @@ from app.dashboard_service import (
     build_hotspot_rows,
     build_map_rows,
     build_overview_payload,
+    build_intelligence_payload,
+    build_mission_payload,
+    build_timeline_payload,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import copy
 from src.optimize import allocate_officers, relief_from_assignments
 from src.evaluate import deployment_roi
@@ -44,9 +48,13 @@ app.add_middleware(
 
 cfg = config.load()
 processed_dir = cfg["data"]["processed_dir"]
+violations_csv = cfg.get("data", {}).get("violations_csv", "")
+if violations_csv and not os.path.isabs(violations_csv):
+    violations_csv = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", violations_csv))
 
 try:
     artifacts = load_stage4_artifacts(processed_dir)
+    raw_violations = load_csv_safe(violations_csv) if violations_csv else pd.DataFrame()
     cii_df = artifacts["cii"]
     base_plan_df = artifacts["deployment"]
     roi_metrics = artifacts["roi_metrics"] or {}
@@ -77,6 +85,7 @@ except Exception as e:
     model_metadata = {}
     feature_importance = None
     ranker_importance = None
+    raw_violations = pd.DataFrame()
 
 
 def loaded_artifacts():
@@ -90,6 +99,7 @@ def loaded_artifacts():
         "model_metadata": model_metadata,
         "feature_importance": feature_importance,
         "ranker_importance": ranker_importance,
+        "raw_violations": raw_violations if "raw_violations" in globals() else pd.DataFrame(),
     }
 
 
@@ -132,6 +142,8 @@ def mappls_frontend_config():
             "enabled": bool(key),
             "sdk_url": sdk_urls[0] if sdk_urls else "",
             "sdk_urls": sdk_urls,
+            "style_url": read_env_value("MAPPLS_STYLE_URL") or "",
+            "tile_url": read_env_value("MAPPLS_TILE_URL") or "",
             "attribution": "Map powered by Mappls",
         },
         "fallback": {
@@ -174,7 +186,7 @@ def get_dashboard_data():
 
 
 class OptimizeRequest(BaseModel):
-    officer_budget: int
+    officer_budget: int = Field(ge=0)
 
 @app.post("/api/optimize")
 def optimize_deployment(req: OptimizeRequest):
@@ -230,7 +242,24 @@ def optimize_deployment(req: OptimizeRequest):
     except Exception as e:
         print(f"Error persisting new deployment: {e}")
         
-    return {"status": "success", "officer_budget": req.officer_budget}
+    optimized_relief = float(plan["expected_relief"].sum()) if "expected_relief" in plan else 0.0
+    reactive_relief = float(reactive_plan["expected_relief"].sum()) if "expected_relief" in reactive_plan else 0.0
+    allocated_officers = (
+        int(pd.to_numeric(plan["officers_assigned"], errors="coerce").fillna(0).sum())
+        if "officers_assigned" in plan
+        else 0
+    )
+    return {
+        "status": "success",
+        "officer_budget": req.officer_budget,
+        "allocated_officers": allocated_officers,
+        "unused_officers": max(int(req.officer_budget) - allocated_officers, 0),
+        "totals": {
+            "optimized_relief": optimized_relief,
+            "reactive_relief": reactive_relief,
+            "lift_pct": float(new_roi_metrics.get("lift_pct", 0.0) or 0.0),
+        },
+    }
 
 
 @app.get("/api/health")
@@ -251,7 +280,11 @@ def get_frontend_config():
 
 @app.get("/api/overview")
 def get_overview():
-    payload = build_overview_payload(loaded_artifacts(), artifact_rows())
+    payload = build_overview_payload(
+        loaded_artifacts(),
+        artifact_rows(),
+        h3_resolution=cfg.get("geo", {}).get("h3_resolution", 9),
+    )
     payload["bbox"] = cfg["geo"]["bbox"] if "geo" in cfg else None
     return payload
 
@@ -261,6 +294,7 @@ def get_map_data(
     station: str | None = Query(default=None),
     min_support: float = Query(default=0.0, ge=0.0, le=1.0),
     query: str | None = Query(default=None),
+    h3: str | None = Query(default=None),
     limit: int = Query(default=300, ge=1, le=1000),
 ):
     return {
@@ -269,6 +303,7 @@ def get_map_data(
             station=station,
             min_support=min_support,
             query=query,
+            h3=h3,
             limit=limit,
         ),
         "bbox": cfg["geo"]["bbox"] if "geo" in cfg else None,
@@ -280,6 +315,7 @@ def get_hotspots(
     station: str | None = Query(default=None),
     min_support: float = Query(default=0.0, ge=0.0, le=1.0),
     query: str | None = Query(default=None),
+    h3: str | None = Query(default=None),
     limit: int = Query(default=250, ge=1, le=1000),
 ):
     return {
@@ -288,6 +324,7 @@ def get_hotspots(
             station=station,
             min_support=min_support,
             query=query,
+            h3=h3,
             limit=limit,
         )
     }
@@ -323,6 +360,36 @@ def get_feature_importance():
         "ranker": clean_data_for_json(ranker_importance)
     }
 
+@app.get("/api/intelligence")
+def get_intelligence(
+    station: str | None = Query(default=None),
+    query: str | None = Query(default=None),
+    h3: str | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=500),
+):
+    return build_intelligence_payload(loaded_artifacts(), station=station, query=query, h3=h3, limit=limit)
+
+
+@app.get("/api/timeline")
+def get_timeline(
+    station: str | None = Query(default=None),
+    query: str | None = Query(default=None),
+    h3: str | None = Query(default=None),
+    limit: int = Query(default=150, ge=1, le=1000),
+):
+    return build_timeline_payload(loaded_artifacts(), station=station, query=query, h3=h3, limit=limit)
+
+
+@app.get("/api/missions")
+def get_missions(
+    station: str | None = Query(default=None),
+    query: str | None = Query(default=None),
+    h3: str | None = Query(default=None),
+    limit: int = Query(default=40, ge=1, le=200),
+):
+    return build_mission_payload(loaded_artifacts(), station=station, query=query, h3=h3, limit=limit)
+
+
 # Mount the react build if it exists
 frontend_dist = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
 if os.path.exists(frontend_dist):
@@ -333,4 +400,4 @@ else:
         return HTMLResponse("<h1>Frontend build not found. Run 'npm run build' inside frontend/.</h1>")
 
 if __name__ == "__main__":
-    uvicorn.run("app.app:app", host="127.0.0.1", port=8501, reload=True)
+    uvicorn.run("app.app:app", host="127.0.0.1", port=8000, reload=True)

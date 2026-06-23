@@ -1,9 +1,21 @@
+import logging
 import math
 from typing import Any
 
 import pandas as pd
+import h3
+
+logger = logging.getLogger(__name__)
 
 from src.app_utils import format_hotspot_label, prepare_map_dataframe, summarize_deployment
+from src.curb_intelligence import (
+    build_mission_card,
+    classify_lifecycle,
+    compute_capacity_theft,
+    compute_opportunity_gap,
+    compute_time_to_criticality,
+    fingerprint_hotspot,
+)
 
 
 HOTSPOT_COLUMNS = [
@@ -55,7 +67,37 @@ METRIC_COLUMNS = [
     "data_quality_score",
 ]
 
-MAX_SEARCH_SUGGESTIONS = 500
+MAX_SEARCH_SUGGESTIONS = 5000
+
+FORECAST_CONTEXT_COLUMNS = [
+    "h3",
+    "timestamp",
+    "current_cii",
+    "current_violation_count",
+    "capacity_ratio",
+    "current_capacity_ratio",
+    "current_capacity_component",
+    "current_temporal_component",
+    "current_chronic_component",
+    "cii_lag_1h",
+    "cii_lag_3h",
+    "cii_roll_3h_mean",
+    "cii_same_hour_1d",
+    "cii_ewm_3h",
+    "ring1_current_cii_mean",
+    "ring1_active_neighbor_count",
+    "support_score",
+    "data_quality_score",
+    "lanes",
+    "hour",
+    "pred_next_1h_cii",
+    "pred_next_1h_cii_proxy",
+    "pred_next_2h_cii",
+    "pred_next_2h_cii_proxy",
+    "pred_next_3h_cii",
+    "forecast_cii",
+    "forecast_horizon_source",
+]
 
 
 def _json_scalar(value: Any):
@@ -96,10 +138,42 @@ def _deployment_df(artifacts):
     return deployment.copy() if deployment is not None else pd.DataFrame()
 
 
-def _apply_filters(df, station=None, min_support=0.0, query=None):
+def _forecast_context_df(artifacts):
+    predictions = artifacts.get("predictions")
+    if predictions is None or predictions.empty or "h3" not in predictions.columns:
+        return pd.DataFrame()
+    context = _ensure_horizon_columns(predictions)
+    cols = [col for col in FORECAST_CONTEXT_COLUMNS if col in context.columns]
+    context = context[cols].copy()
+    sort_cols = [col for col in ["pred_next_3h_cii", "current_cii", "timestamp"] if col in context.columns]
+    if sort_cols:
+        context = context.sort_values(sort_cols, ascending=[False] * len(sort_cols), kind="mergesort")
+    return context.drop_duplicates("h3", keep="first")
+
+
+def _deployment_with_forecast_context(artifacts):
+    deployment = _deployment_df(artifacts)
+    context = _forecast_context_df(artifacts)
+    if deployment.empty or context.empty or "h3" not in deployment.columns:
+        return deployment
+    context_cols = [col for col in context.columns if col == "h3" or col not in ["label"]]
+    overlap = [col for col in context_cols if col != "h3" and col in deployment.columns]
+    renamed = {col: f"{col}__forecast" for col in overlap}
+    incoming = context[context_cols].rename(columns=renamed)
+    out = deployment.merge(incoming, on="h3", how="left")
+    for col in overlap:
+        forecast_col = renamed[col]
+        out[col] = out[forecast_col].combine_first(out[col])
+        out = out.drop(columns=[forecast_col])
+    return out
+
+
+def _apply_filters(df, station=None, min_support=0.0, query=None, h3=None):
     if df is None or df.empty:
         return pd.DataFrame()
     out = df.copy()
+    if h3 and "h3" in out.columns:
+        return out[out["h3"] == h3]
     if station and station != "ALL" and "top_police_station" in out.columns:
         out = out[out["top_police_station"] == station]
     if min_support is not None and "support_score" in out.columns:
@@ -125,13 +199,13 @@ def _with_labels(df):
     return out
 
 
-def build_filter_options(plan_df):
+def build_filter_options(plan_df, raw_locations=None, h3_resolution=9):
     if plan_df is None or plan_df.empty:
         return {"stations": [], "suggestions": [], "support": {"min": 0.0, "max": 1.0}}
     stations = []
     if "top_police_station" in plan_df.columns:
         stations = sorted(str(s) for s in plan_df["top_police_station"].dropna().unique())
-    suggestions = build_search_suggestions(plan_df)
+    suggestions = build_search_suggestions(plan_df, raw_locations=raw_locations, h3_resolution=h3_resolution)
     if "support_score" in plan_df.columns:
         support = pd.to_numeric(plan_df["support_score"], errors="coerce").dropna()
         if not support.empty:
@@ -143,10 +217,41 @@ def build_filter_options(plan_df):
     return {"stations": stations, "suggestions": suggestions, "support": {"min": 0.0, "max": 1.0}}
 
 
-def build_search_suggestions(plan_df, limit=MAX_SEARCH_SUGGESTIONS):
-    if plan_df is None or plan_df.empty or "top_location" not in plan_df.columns:
+def _raw_locations_to_suggestion_frame(raw_locations, h3_resolution=9):
+    if raw_locations is None or raw_locations.empty or "location" not in raw_locations.columns:
+        return pd.DataFrame()
+    out = raw_locations.copy()
+    out["top_location"] = out["location"].fillna("").astype(str).str.strip()
+    out = out[out["top_location"] != ""]
+    if out.empty:
+        return pd.DataFrame()
+    if "police_station" in out.columns:
+        out["top_police_station"] = out["police_station"]
+    if "junction_name" in out.columns:
+        out["top_junction"] = out["junction_name"]
+    if "h3" not in out.columns and {"latitude", "longitude"}.issubset(out.columns):
+        def _cell(row):
+            lat = pd.to_numeric(row.get("latitude"), errors="coerce")
+            lng = pd.to_numeric(row.get("longitude"), errors="coerce")
+            if pd.isna(lat) or pd.isna(lng):
+                return None
+            try:
+                return h3.latlng_to_cell(float(lat), float(lng), int(h3_resolution))
+            except Exception:
+                return None
+
+        out["h3"] = out.apply(_cell, axis=1)
+    out["__count"] = out.groupby("top_location")["top_location"].transform("count")
+    return out.sort_values(["__count", "top_location"], ascending=[False, True], kind="mergesort")
+
+
+def build_search_suggestions(plan_df, raw_locations=None, h3_resolution=9, limit=MAX_SEARCH_SUGGESTIONS):
+    source = _raw_locations_to_suggestion_frame(raw_locations, h3_resolution=h3_resolution)
+    if source.empty:
+        source = plan_df
+    if source is None or source.empty or "top_location" not in source.columns:
         return []
-    out = _with_labels(plan_df)
+    out = _with_labels(source)
     out = out.copy()
     out["__location"] = out["top_location"].fillna("").astype(str).str.strip()
     out = out[out["__location"] != ""]
@@ -178,8 +283,9 @@ def build_search_suggestions(plan_df, limit=MAX_SEARCH_SUGGESTIONS):
     return suggestions
 
 
-def build_overview_payload(artifacts, artifact_rows=None):
+def build_overview_payload(artifacts, artifact_rows=None, h3_resolution=9):
     deployment = _deployment_df(artifacts)
+    raw_locations = artifacts.get("raw_violations") if artifacts else None
     backtest = artifacts.get("backtest_metrics") or {}
     roi = artifacts.get("roi_metrics") or {}
     return {
@@ -191,14 +297,14 @@ def build_overview_payload(artifacts, artifact_rows=None):
             "deployment_score_top25_recall": _json_scalar(backtest.get("deployment_score_top25_recall")),
             "deployment_score_ndcg_at_25": _json_scalar(backtest.get("deployment_score_ndcg_at_25")),
         },
-        "filters": build_filter_options(deployment),
+        "filters": build_filter_options(deployment, raw_locations=raw_locations, h3_resolution=h3_resolution),
         "artifacts": _artifact_records(artifact_rows),
     }
 
 
-def build_hotspot_rows(artifacts, station=None, min_support=0.0, query=None, limit=250):
+def build_hotspot_rows(artifacts, station=None, min_support=0.0, query=None, h3=None, limit=250):
     deployment = _with_labels(_deployment_df(artifacts))
-    deployment = _apply_filters(deployment, station=station, min_support=min_support, query=query)
+    deployment = _apply_filters(deployment, station=station, min_support=min_support, query=query, h3=h3)
     if "deployment_score" in deployment.columns:
         deployment = deployment.sort_values("deployment_score", ascending=False, kind="mergesort")
     cols = [col for col in HOTSPOT_COLUMNS if col in deployment.columns]
@@ -244,7 +350,7 @@ def _attach_remaining_cii(map_df):
     return out
 
 
-def build_map_rows(artifacts, station=None, min_support=0.0, query=None, limit=300):
+def build_map_rows(artifacts, station=None, min_support=0.0, query=None, h3=None, limit=300):
     cii_df = artifacts.get("cii")
     deployment = _deployment_df(artifacts)
     if cii_df is None:
@@ -253,7 +359,7 @@ def build_map_rows(artifacts, station=None, min_support=0.0, query=None, limit=3
         cii_df = cii_df[cii_df["h3"].isin(deployment["h3"].dropna().unique())]
     map_df = prepare_map_dataframe(cii_df, deployment) if not cii_df.empty else _with_labels(deployment)
     map_df = _with_labels(map_df)
-    map_df = _apply_filters(map_df, station=station, min_support=min_support, query=query)
+    map_df = _apply_filters(map_df, station=station, min_support=min_support, query=query, h3=h3)
     map_df = _dedupe_map_cells(map_df)
     map_df = _attach_remaining_cii(map_df)
     if "deployment_score" in map_df.columns:
@@ -351,3 +457,86 @@ def build_evidence_payload(artifacts, artifact_rows=None):
         },
         "artifacts": _artifact_records(artifact_rows),
     }
+
+
+def _optimizer_settings():
+    return {"effectiveness": 0.35, "decay": 0.55}
+
+
+def _ensure_horizon_columns(df):
+    if df is None or df.empty:
+        return pd.DataFrame()
+    out = df.copy()
+    if "pred_next_3h_cii" in out.columns and "pred_next_1h_cii" not in out.columns:
+        out["pred_next_1h_cii_proxy"] = pd.to_numeric(out["pred_next_3h_cii"], errors="coerce").fillna(0.0) / 3.0
+    if "pred_next_3h_cii" in out.columns and "pred_next_2h_cii" not in out.columns:
+        out["pred_next_2h_cii_proxy"] = pd.to_numeric(out["pred_next_3h_cii"], errors="coerce").fillna(0.0) * 2.0 / 3.0
+    out["forecast_horizon_source"] = "learned" if "pred_next_1h_cii" in out.columns else "proxy_from_next_3h"
+    return out
+
+
+def _with_intelligence_columns(df):
+    if df is None or df.empty:
+        return pd.DataFrame()
+    out = _ensure_horizon_columns(_with_labels(df))
+    out = out.copy()
+    out["capacity_theft"] = out.apply(lambda row: compute_capacity_theft(row.to_dict()), axis=1)
+    out["lifecycle"] = out.apply(lambda row: classify_lifecycle(row.to_dict()), axis=1)
+    out["criticality"] = out.apply(lambda row: compute_time_to_criticality(row.to_dict()), axis=1)
+    out["fingerprint"] = out.apply(lambda row: fingerprint_hotspot(row.to_dict()), axis=1)
+    out["opportunity_gap"] = out.apply(lambda row: compute_opportunity_gap(row.to_dict()), axis=1)
+    return out
+
+
+def build_intelligence_payload(artifacts, station=None, query=None, h3=None, limit=100):
+    deployment = _apply_filters(_deployment_with_forecast_context(artifacts), station=station, query=query, h3=h3)
+    deployment = _with_intelligence_columns(deployment)
+    if "deployment_score" in deployment.columns:
+        deployment = deployment.sort_values("deployment_score", ascending=False, kind="mergesort")
+    rows = deployment.head(int(limit)) if limit else deployment
+    return {
+        "rows": _records(rows),
+        "summary": {
+            "hotspots": int(len(deployment)),
+            "critical": int((deployment["lifecycle"].isin(["active", "spreading", "chronic"])).sum()) if "lifecycle" in deployment else 0,
+            "opportunity_gap_total": float(pd.to_numeric(deployment.get("opportunity_gap", 0.0), errors="coerce").fillna(0.0).sum()) if not deployment.empty else 0.0,
+        },
+    }
+
+
+def build_timeline_payload(artifacts, station=None, query=None, h3=None, limit=150):
+    predictions = artifacts.get("predictions")
+    deployment = _deployment_df(artifacts)
+    if predictions is None or predictions.empty:
+        return {"horizons": [], "rows": []}
+    rows = _ensure_horizon_columns(predictions)
+    if "h3" in rows.columns and not deployment.empty and "h3" in deployment.columns:
+        meta_cols = [col for col in ["h3", "label", "top_location", "top_police_station", "deployment_score", "officers_assigned", "expected_relief"] if col in deployment.columns]
+        # Only merge columns that don't already exist to avoid _x/_y suffixes
+        cols_from_deployment = [c for c in meta_cols if c == "h3" or c not in rows.columns]
+        if len(cols_from_deployment) > 1:
+            rows = rows.merge(_with_labels(deployment)[cols_from_deployment].drop_duplicates("h3"), on="h3", how="left")
+    rows = _apply_filters(rows, station=station, query=query, h3=h3)
+    if "pred_next_3h_cii" in rows.columns:
+        rows = rows.sort_values("pred_next_3h_cii", ascending=False, kind="mergesort")
+    rows = rows.head(int(limit))
+    # Add intelligence columns so frontend has capacity_theft, lifecycle, etc.
+    rows = _with_intelligence_columns(rows)
+    return {
+        "horizons": ["now", "+60m", "+3h", "pattern"],
+        "horizon_source": "learned" if "pred_next_1h_cii" in rows.columns else "proxy_from_next_3h",
+        "rows": _records(rows),
+    }
+
+
+def build_mission_payload(artifacts, station=None, query=None, h3=None, limit=40):
+    deployment = _apply_filters(_deployment_with_forecast_context(artifacts), station=station, query=query, h3=h3)
+    deployment = _with_intelligence_columns(deployment)
+    if "deployment_score" in deployment.columns:
+        deployment = deployment.sort_values("deployment_score", ascending=False, kind="mergesort")
+    settings = _optimizer_settings()
+    cards = [
+        build_mission_card(row, settings["effectiveness"], settings["decay"])
+        for row in _records(deployment.head(int(limit)))
+    ]
+    return {"rows": cards}

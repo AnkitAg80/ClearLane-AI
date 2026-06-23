@@ -29,3 +29,5 @@ gemini.md
 AGENTS.md
 docs\CII_METHOD.md
 docs\NEXT_3H_MODEL.md
+.opencode/
+tests/

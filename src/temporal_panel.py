@@ -42,6 +42,9 @@ BASE_COLUMNS = [
     "dow",
     "month",
     "is_weekend",
+    "capacity_stolen_pct",
+    "time_to_criticality_mins",
+    "lifecycle_stage",
 ]
 
 
@@ -92,6 +95,21 @@ def _apply_hourly_cii_components(panel, cfg):
         * out["current_temporal_component"]
         * out["current_chronic_component"]
     )
+    
+    # Calculate intelligence features
+    from src.curb_intelligence import compute_capacity_theft, compute_time_to_criticality, classify_lifecycle
+    
+    out["capacity_stolen_pct"] = out.apply(
+        lambda r: compute_capacity_theft(r.to_dict())["capacity_theft_pct"], axis=1
+    )
+    def _safe_ttc(r):
+        result = compute_time_to_criticality(r.to_dict())["time_to_criticality_minutes"]
+        return result if result is not None else 999
+    out["time_to_criticality_mins"] = out.apply(_safe_ttc, axis=1)
+    out["lifecycle_stage"] = out.apply(
+        lambda r: classify_lifecycle(r.to_dict()), axis=1
+    )
+    
     return out
 
 

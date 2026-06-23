@@ -8,9 +8,12 @@ from app.dashboard_service import (
     build_filter_options,
     build_hotspot_detail,
     build_hotspot_rows,
+    build_intelligence_payload,
     build_map_rows,
+    build_mission_payload,
     build_overview_payload,
     build_search_suggestions,
+    build_timeline_payload,
 )
 
 
@@ -138,6 +141,39 @@ def test_build_overview_payload_returns_summary_and_filters():
     assert payload["artifacts"][0]["artifact"] == "cell_cii.parquet"
 
 
+def test_build_search_suggestions_can_use_raw_csv_locations_and_compute_h3():
+    raw = pd.DataFrame([
+        {
+            "location": "Ashok Nagar Main Road, Bengaluru",
+            "police_station": "Ashok Nagar",
+            "junction_name": "MG Junction",
+            "latitude": 12.9701,
+            "longitude": 77.6101,
+        },
+        {
+            "location": "Ashok Nagar Main Road, Bengaluru",
+            "police_station": "Ashok Nagar",
+            "junction_name": "MG Junction",
+            "latitude": 12.9701,
+            "longitude": 77.6101,
+        },
+        {
+            "location": "Beta Road",
+            "police_station": "Station 2",
+            "junction_name": "No Junction",
+            "latitude": 12.9,
+            "longitude": 77.7,
+        },
+    ])
+
+    suggestions = build_search_suggestions(_sample_artifacts()["deployment"], raw_locations=raw, h3_resolution=9)
+
+    assert [item["label"] for item in suggestions] == ["Ashok Nagar Main Road, Bengaluru", "Beta Road"]
+    assert suggestions[0]["station"] == "Ashok Nagar"
+    assert suggestions[0]["junction"] == "MG Junction"
+    assert suggestions[0]["h3"]
+
+
 def test_build_hotspot_rows_filters_search_station_and_support():
     artifacts = _sample_artifacts()
 
@@ -159,6 +195,18 @@ def test_build_map_rows_includes_ui_ready_metric_fields():
     assert rows[0]["metric_values"]["deployment_score"] == 0.42
     assert rows[0]["metric_values"]["officers_assigned"] == 1
     assert rows[0]["metric_values"]["remaining_next_3h_cii"] == 4.5
+
+
+def test_build_rows_support_exact_h3_filter_for_selected_search_suggestion():
+    artifacts = _sample_artifacts()
+
+    hotspot_rows = build_hotspot_rows(artifacts, h3="cell-b")
+    map_rows = build_map_rows(artifacts, h3="cell-b")
+
+    assert len(hotspot_rows) == 1
+    assert hotspot_rows[0]["h3"] == "cell-b"
+    assert len(map_rows) == 1
+    assert map_rows[0]["h3"] == "cell-b"
 
 
 def test_build_map_rows_clips_remaining_cii_after_large_relief():
@@ -226,3 +274,65 @@ def test_build_evidence_payload_returns_metrics_and_feature_tables():
     assert payload["backtest"]["deployment_score_top25_recall"] == 0.5
     assert payload["feature_importance"]["regression"][0]["feature"] == "hour"
     assert payload["artifacts"][0]["exists"] is False
+
+
+def test_intelligence_and_missions_use_forecast_context_for_matching_h3():
+    artifacts = _sample_artifacts()
+    artifacts["deployment"].loc[0, ["current_cii", "current_violation_count"]] = [0.0, 0]
+    artifacts["predictions"] = pd.DataFrame([
+        {
+            "h3": "cell-a",
+            "timestamp": pd.Timestamp("2024-04-01T09:00:00Z"),
+            "current_cii": 15.0,
+            "current_violation_count": 33,
+            "pred_next_3h_cii": 90.0,
+            "capacity_ratio": 0.5,
+            "lanes": 2,
+            "active_hour_streak": 4,
+            "current_chronic_component": 1.5,
+            "support_score": 0.75,
+        },
+    ])
+
+    intelligence = build_intelligence_payload(artifacts, limit=2)["rows"]
+    missions = build_mission_payload(artifacts, limit=2)["rows"]
+
+    intel_cell = next(row for row in intelligence if row["h3"] == "cell-a")
+    mission_cell = next(row for row in missions if row["id"] == "cell-a")
+    assert intel_cell["current_violation_count"] == 33
+    assert intel_cell["capacity_theft"]["capacity_theft_pct"] == 50.0
+    assert mission_cell["violation_count"] == 33
+    assert mission_cell["capacity_theft"]["capacity_theft_pct"] == 50.0
+
+
+def test_mission_criticality_uses_one_hour_proxy_when_only_3h_forecast_exists():
+    artifacts = _sample_artifacts()
+    artifacts["deployment"].loc[0, ["current_cii", "current_violation_count", "pred_next_3h_cii"]] = [0.0, 0, 90.0]
+
+    mission = build_mission_payload(artifacts, station="Station 1", limit=1)["rows"][0]
+
+    assert mission["criticality"]["time_to_criticality_minutes"] == 60
+    assert mission["criticality"]["criticality_label"] == "critical in 60 min"
+
+
+def test_timeline_payload_exposes_horizon_source_and_context_fields():
+    artifacts = _sample_artifacts()
+    artifacts["predictions"] = pd.DataFrame([
+        {
+            "h3": "cell-a",
+            "current_cii": 0.0,
+            "current_violation_count": 0,
+            "pred_next_3h_cii": 90.0,
+            "capacity_ratio": 0.25,
+            "lanes": 2,
+            "support_score": 0.75,
+        },
+    ])
+
+    payload = build_timeline_payload(artifacts, limit=1)
+    row = payload["rows"][0]
+
+    assert payload["horizon_source"] == "proxy_from_next_3h"
+    assert row["pred_next_1h_cii_proxy"] == 30.0
+    assert row["capacity_theft"]["capacity_theft_pct"] == 25.0
+    assert row["criticality"]["time_to_criticality_minutes"] == 60
