@@ -40,16 +40,19 @@ export function FilterBar() {
     if (nextH3) select(nextH3);
   }, [hydrateFromUrl, searchParams, select]);
 
-  React.useEffect(() => {
-    const params = new URLSearchParams();
-    if (station) params.set('station', station);
-    if (minSupport > 0) params.set('support', String(minSupport));
-    if (query) params.set('q', query);
-    if (selectedH3) params.set('h3', selectedH3);
-    if (params.toString() !== searchParams.toString()) {
-      setSearchParams(params, { replace: true });
-    }
-  }, [minSupport, query, searchParams, selectedH3, setSearchParams, station]);
+  const handleStationChange = (val: string | null) => {
+    setStation(val);
+    const params = new URLSearchParams(searchParams);
+    if (val) params.set('station', val); else params.delete('station');
+    setSearchParams(params, { replace: true });
+  };
+
+  const handleSupportChange = (val: number) => {
+    setMinSupport(val);
+    const params = new URLSearchParams(searchParams);
+    if (val > 0) params.set('support', String(val)); else params.delete('support');
+    setSearchParams(params, { replace: true });
+  };
 
   const clearFilters = () => {
     reset();
@@ -58,8 +61,8 @@ export function FilterBar() {
   };
 
   return (
-    <div className="flex min-w-[46rem] items-center gap-3 rounded-lg border border-border-default bg-bg-elevated p-2 shadow-sm">
-      <div className="min-w-[19rem] flex-1 border-r border-border-default pr-3">
+    <div className="flex w-full items-center gap-3 overflow-x-auto scrollbar-none pr-2">
+      <div className="min-w-[12rem] flex-1 border-r border-border-default pr-3">
         <LocationSearchBox suggestions={suggestions} />
       </div>
 
@@ -67,7 +70,7 @@ export function FilterBar() {
         <span className="text-xs text-fg-secondary font-medium">Station:</span>
         <select 
           value={station || ''} 
-          onChange={(e) => setStation(e.target.value || null)}
+          onChange={(e) => handleStationChange(e.target.value || null)}
           aria-label="Police station"
           className="bg-bg-canvas text-sm border border-border-strong rounded px-2 py-1 outline-none focus:ring-1 focus:ring-accent"
         >
@@ -78,22 +81,22 @@ export function FilterBar() {
         </select>
       </div>
 
-      <div className="flex items-center gap-2 px-3 border-r border-border-default pr-3">
-        <span className="text-xs text-fg-secondary font-medium">Min Support:</span>
+      <div className="flex items-center gap-2 border-r border-border-default pr-3">
+        <span className="whitespace-nowrap text-xs font-medium text-fg-secondary">Min Support:</span>
         <input 
           type="range" 
           min="0" 
           max="100" 
           value={minSupport} 
-          onChange={(e) => setMinSupport(Number(e.target.value))}
+          onChange={(e) => handleSupportChange(Number(e.target.value))}
           aria-label="Minimum support"
           className="w-24 accent-accent"
         />
         <span className="text-xs font-tabular text-fg-primary w-6 text-right">{minSupport}%</span>
       </div>
 
-      <Button variant="ghost" size="icon" onClick={clearFilters} title="Clear Filters" className="text-fg-tertiary hover:text-fg-primary ml-auto">
-        <FilterX className="w-4 h-4" />
+      <Button variant="ghost" size="icon" onClick={clearFilters} title="Clear Filters" className="ml-auto shrink-0 text-fg-tertiary hover:text-fg-primary">
+        <FilterX className="h-4 w-4" />
       </Button>
     </div>
   );

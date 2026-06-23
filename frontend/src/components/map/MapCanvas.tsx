@@ -260,24 +260,49 @@ export function MapCanvas() {
     }
   }, [selectedH3]);
 
-  // Fit bounds
+  // Fit bounds to filtered data if available, otherwise global overview
   useEffect(() => {
-    if (!map.current || !overview?.bbox) return;
+    if (!map.current || selectedH3) return; // if single cell is selected, let the other effect handle it
 
-    const [west, south, east, north] = Array.isArray(overview.bbox)
-      ? overview.bbox
-      : [overview.bbox.west, overview.bbox.south, overview.bbox.east, overview.bbox.north];
+    let west, south, east, north;
 
-    if (![west, south, east, north].every((value) => typeof value === 'number' && Number.isFinite(value))) return;
+    // First try to fit to the filtered data rows
+    if (data?.rows && data.rows.length > 0) {
+      try {
+        const bounds = new maplibregl.LngLatBounds();
+        data.rows.forEach((row: any) => {
+          if (row.h3) {
+            cellToBoundary(row.h3, true).forEach(([lng, lat]) => bounds.extend([lng, lat]));
+          }
+        });
+        if (!bounds.isEmpty()) {
+          map.current.fitBounds(bounds, { padding: 48, duration: 700, essential: false });
+          return; // done
+        }
+      } catch {
+        // ignore and fallback to overview
+      }
+    }
 
-    map.current.fitBounds(
-      [
-        [west, south],
-        [east, north],
-      ],
-      { padding: 48, duration: 700, essential: false },
-    );
-  }, [overview?.bbox]);
+    // Fallback to overview bbox
+    if (overview?.bbox) {
+      if (Array.isArray(overview.bbox)) {
+        [west, south, east, north] = overview.bbox;
+      } else {
+        west = overview.bbox.west;
+        south = overview.bbox.south;
+        east = overview.bbox.east;
+        north = overview.bbox.north;
+      }
+      
+      if ([west, south, east, north].every((value) => typeof value === 'number' && Number.isFinite(value))) {
+        map.current.fitBounds(
+          [[west, south], [east, north]],
+          { padding: 48, duration: 700, essential: false },
+        );
+      }
+    }
+  }, [data?.rows, overview?.bbox, selectedH3]);
 
   return (
     <div className="absolute inset-0 w-full h-full">
