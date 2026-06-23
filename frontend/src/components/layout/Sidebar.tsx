@@ -2,6 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '../../lib/utils/cn';
 import { Map, LayoutDashboard, Crosshair, Clock, ShieldAlert, Zap, Target, LineChart, Database } from 'lucide-react';
+import { Tooltip } from '../foundation/Tooltip';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Overview', icon: LayoutDashboard },
@@ -29,21 +30,22 @@ export function Sidebar() {
       
       <div className="flex flex-col gap-1 w-full flex-1">
         {NAV_ITEMS.map(({ path, label, icon: Icon }) => (
-          <NavLink
-            key={path}
-            to={path}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-3 px-3 w-full h-9 rounded-md transition-all text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent active:scale-[0.98]',
-                isActive
-                  ? 'bg-bg-elevated text-fg-primary shadow-sm hairline-b'
-                  : 'text-fg-secondary hover:text-fg-primary hover:bg-bg-elevated/50'
-              )
-            }
-          >
-            <Icon className="w-4 h-4 shrink-0" />
-            <span className="hidden md:block truncate">{label}</span>
-          </NavLink>
+          <Tooltip key={path} content={label} side="right" sideOffset={16} className="md:hidden">
+            <NavLink
+              to={path}
+              className={({ isActive }) =>
+                cn(
+                  'flex items-center gap-3 px-3 w-full h-9 rounded-md transition-all text-sm font-medium focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent active:scale-[0.98]',
+                  isActive
+                    ? 'bg-bg-elevated text-fg-primary shadow-sm hairline-b'
+                    : 'text-fg-secondary hover:text-fg-primary hover:bg-bg-elevated/50'
+                )
+              }
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <span className="hidden md:block truncate">{label}</span>
+            </NavLink>
+          </Tooltip>
         ))}
       </div>
     </nav>

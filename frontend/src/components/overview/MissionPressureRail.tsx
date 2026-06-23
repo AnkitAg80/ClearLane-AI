@@ -4,6 +4,7 @@ import { ArrowUpRight, Copy, MapPin } from 'lucide-react';
 import { useMissions } from '../../lib/api/hooks';
 import { useSelectionStore } from '../../stores/useSelectionStore';
 import type { MissionCard as MissionCardType } from '../../types/api';
+import { Tooltip } from '../foundation/Tooltip';
 
 function getString(row: MissionCardType, key: string, fallback = '-') {
   const value = row[key];
@@ -73,15 +74,21 @@ export function MissionPressureRail() {
                     <span className="font-mono text-xl text-sig-calm">{expected_relief.toFixed(1)}</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <button type="button" aria-label="Open detail" onClick={() => select(mission.h3)} className="flex h-8 items-center justify-center rounded-md border border-border-default bg-bg-canvas/60 text-fg-secondary hover:text-fg-primary">
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </button>
-                    <button type="button" aria-label="Pin to canvas" onClick={() => { select(mission.h3); navigate(`/canvas?h3=${encodeURIComponent(mission.h3)}`); }} className="flex h-8 items-center justify-center rounded-md border border-border-default bg-bg-canvas/60 text-fg-secondary hover:text-fg-primary">
-                      <MapPin className="h-3.5 w-3.5" />
-                    </button>
-                    <button type="button" aria-label="Copy h3" onClick={() => navigator.clipboard?.writeText(mission.h3)} className="flex h-8 items-center justify-center rounded-md border border-border-default bg-bg-canvas/60 text-fg-secondary hover:text-fg-primary">
-                      <Copy className="h-3.5 w-3.5" />
-                    </button>
+                    <Tooltip content="Open Detail" side="top">
+                      <button type="button" aria-label="Open detail" onClick={() => select(mission.h3)} className="flex h-8 w-full items-center justify-center rounded-md border border-border-default bg-bg-canvas/60 text-fg-secondary hover:text-fg-primary">
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Pin to Canvas" side="top">
+                      <button type="button" aria-label="Pin to canvas" onClick={() => { select(mission.h3); navigate(`/canvas?h3=${encodeURIComponent(mission.h3)}`); }} className="flex h-8 w-full items-center justify-center rounded-md border border-border-default bg-bg-canvas/60 text-fg-secondary hover:text-fg-primary">
+                        <MapPin className="h-3.5 w-3.5" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content="Copy H3 Index" side="top">
+                      <button type="button" aria-label="Copy h3" onClick={() => navigator.clipboard?.writeText(mission.h3)} className="flex h-8 w-full items-center justify-center rounded-md border border-border-default bg-bg-canvas/60 text-fg-secondary hover:text-fg-primary">
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               </article>

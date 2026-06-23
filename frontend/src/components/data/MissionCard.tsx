@@ -3,6 +3,7 @@ import { Copy, ExternalLink, MapPin, Navigation, ShieldCheck, Target, Timer } fr
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import type { MissionCard as MissionCardType } from '../../types/api';
+import { Tooltip } from '../foundation/Tooltip';
 
 function getString(row: MissionCardType, key: string, fallback = '-') {
   const value = row[key];
@@ -86,21 +87,27 @@ export function MissionCard({ mission, lifecycle, onOpenDetail, onPinToCanvas, o
       <div>
         <div className="mb-3 truncate border-t border-border-default/50 pt-3 font-mono text-[10px] text-fg-tertiary">{row.h3}</div>
         <div className="grid grid-cols-3 gap-2">
-          <Button type="button" variant="secondary" size="sm" aria-label="Open detail" className="px-2" onClick={() => onOpenDetail(row.h3)}>
-            <ExternalLink className="h-3 w-3" />
-            <span className="sr-only">Open detail</span>
-            <span aria-hidden="true" className="text-[11px]">Open</span>
-          </Button>
-          <Button type="button" variant="secondary" size="sm" aria-label="Pin to canvas" className="px-2" onClick={() => onPinToCanvas(row.h3)}>
-            <MapPin className="h-3 w-3" />
-            <span className="sr-only">Pin to canvas</span>
-            <span aria-hidden="true" className="text-[11px]">Pin</span>
-          </Button>
-          <Button type="button" variant="secondary" size="sm" aria-label="Copy h3" className="px-2" onClick={() => onCopyH3(row.h3)}>
-            <Copy className="h-3 w-3" />
-            <span className="sr-only">Copy h3</span>
-            <span aria-hidden="true" className="text-[11px]">Copy</span>
-          </Button>
+          <Tooltip content="Open Detail" side="top">
+            <Button type="button" variant="secondary" size="sm" aria-label="Open detail" className="px-2 w-full" onClick={() => onOpenDetail(row.h3)}>
+              <ExternalLink className="h-3 w-3" />
+              <span className="sr-only">Open detail</span>
+              <span aria-hidden="true" className="text-[11px]">Open</span>
+            </Button>
+          </Tooltip>
+          <Tooltip content="Pin to Canvas" side="top">
+            <Button type="button" variant="secondary" size="sm" aria-label="Pin to canvas" className="px-2 w-full" onClick={() => onPinToCanvas(row.h3)}>
+              <MapPin className="h-3 w-3" />
+              <span className="sr-only">Pin to canvas</span>
+              <span aria-hidden="true" className="text-[11px]">Pin</span>
+            </Button>
+          </Tooltip>
+          <Tooltip content="Copy H3 Index" side="top">
+            <Button type="button" variant="secondary" size="sm" aria-label="Copy h3" className="px-2 w-full" onClick={() => onCopyH3(row.h3)}>
+              <Copy className="h-3 w-3" />
+              <span className="sr-only">Copy h3</span>
+              <span aria-hidden="true" className="text-[11px]">Copy</span>
+            </Button>
+          </Tooltip>
         </div>
       </div>
     </article>
